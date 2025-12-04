@@ -1,0 +1,48 @@
+<!--pages/theater/theater.wxml-->
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-title">虫虫小剧场</view>
+
+  <!-- 分类标签 -->
+  <view class="category-tabs">
+    <view wx:for="{{categories}}" wx:key="*this" 
+          class="tab-item {{activeCategory === item ? 'active' : ''}}" 
+          bindtap="switchCategory" 
+          data-category="{{item}}">
+      {{item}}
+    </view>
+  </view>
+
+  <!-- 视频列表 -->
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:elif="{{videos.length === 0}}" class="empty-state">
+    <text class="empty-icon">🎬</text>
+    <text class="empty-text">暂无视频内容</text>
+  </view>
+
+  <view wx:else class="video-list">
+    <view wx:for="{{videos}}" wx:key="id" class="video-item" bindtap="playVideo" data-id="{{item.id}}">
+      <image class="video-thumb" src="{{item.thumbnail_url || '/images/video_default.jpg'}}" mode="aspectFill"></image>
+      <view class="video-info">
+        <text class="video-title">{{item.title}}</text>
+        <view class="video-meta">
+          <text class="insect-name">{{item.insect_name}}</text>
+          <text class="duration">{{item.duration}}</text>
+          <text class="view-count">{{item.view_count}} 次观看</text>
+        </view>
+        <text class="video-description">{{item.description}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载更多 -->
+  <view wx:if="{{hasMore}}" class="load-more">
+    <text>上拉加载更多</text>
+  </view>
+  <view wx:else class="no-more">
+    <text>没有更多了</text>
+  </view>
+</view>

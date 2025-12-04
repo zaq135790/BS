@@ -1,0 +1,91 @@
+<!--pages/puzzle/puzzle.wxml-->
+<view class="container">
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 游戏开始前 -->
+  <view wx:elif="{{!gameStarted && !gameEnded}}" class="start-screen">
+    <view class="title">虫虫拼图</view>
+    <view class="subtitle">将昆虫拼图完整拼好</view>
+    
+    <!-- 难度选择 -->
+    <view class="difficulty-selector">
+      <text class="label">选择难度:</text>
+      <view class="difficulty-options">
+        <button 
+          class="difficulty-btn {{difficulty === '简单' ? 'active' : ''}}"
+          bindtap="selectDifficulty"
+          data-difficulty="简单"
+        >
+          简单 (3x3)
+        </button>
+        <button 
+          class="difficulty-btn {{difficulty === '中等' ? 'active' : ''}}"
+          bindtap="selectDifficulty"
+          data-difficulty="中等"
+        >
+          中等 (4x4)
+        </button>
+        <button 
+          class="difficulty-btn {{difficulty === '困难' ? 'active' : ''}}"
+          bindtap="selectDifficulty"
+          data-difficulty="困难"
+        >
+          困难 (5x5)
+        </button>
+      </view>
+    </view>
+
+    <button class="start-btn" bindtap="startGame">开始拼图</button>
+  </view>
+
+  <!-- 游戏进行中 -->
+  <view wx:elif="{{gameStarted && !gameEnded}}" class="game-screen">
+    <!-- 游戏信息 -->
+    <view class="game-info">
+      <view class="timer">用时: {{formatTime(Math.floor((Date.now() - startTime) / 1000))}}</view>
+      <view class="progress">进度: {{completedPieces.length}}/{{puzzleConfig.pieces_count}}</view>
+      <button class="hint-btn" bindtap="toggleHint">提示</button>
+    </view>
+
+    <!-- 拼图区域 -->
+    <view class="puzzle-area">
+      <view class="puzzle-grid" style="grid-template-columns: repeat({{Math.sqrt(puzzleConfig.pieces_count)}}, 1fr);">
+        <view 
+          wx:for="{{pieces}}" 
+          wx:key="id"
+          class="puzzle-piece {{item.completed ? 'completed' : ''}}"
+          bindtap="clickPiece"
+          data-id="{{item.id}}"
+        >
+          <image 
+            wx:if="{{!item.completed}}"
+            class="piece-image" 
+            src="{{item.image}}" 
+            mode="aspectFill"
+          ></image>
+          <view wx:else class="piece-placeholder">✓</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 提示 -->
+    <view wx:if="{{showHint}}" class="hint">
+      <text>点击拼图块尝试放置，完成所有拼图即可获胜！</text>
+    </view>
+  </view>
+
+  <!-- 游戏结束 -->
+  <view wx:elif="{{gameEnded}}" class="end-screen">
+    <view class="title">拼图完成！</view>
+    <view class="final-score">用时: {{formatTime(completionTime)}}</view>
+    <view class="final-score">得分: {{score}}</view>
+    <view class="buttons">
+      <button class="btn" bindtap="restartGame">再来一局</button>
+      <button class="btn secondary" bindtap="goBack">返回</button>
+    </view>
+  </view>
+</view>
+

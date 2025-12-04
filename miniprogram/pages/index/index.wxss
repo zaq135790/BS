@@ -1,0 +1,220 @@
+.container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding-bottom: 20rpx;
+}
+
+/* 搜索框 */
+.search-box {
+  padding: 20rpx;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10rpx);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 50rpx;
+  padding: 20rpx 30rpx;
+  box-shadow: inset 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.search-input:focus-within {
+  background: white;
+  box-shadow: 0 4rpx 20rpx rgba(76, 175, 80, 0.3);
+}
+
+.placeholder-style {
+  color: #999;
+  font-size: 28rpx;
+}
+
+.search-input input {
+  margin-left: 20rpx;
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 轮播图 */
+.swiper-container {
+  margin: 20rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
+}
+
+.swiper-image {
+  width: 100%;
+  height: 400rpx;
+  object-fit: cover;
+}
+
+/* 功能入口 */
+.features {
+  display: flex;
+  flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10rpx);
+  margin: 20rpx;
+  padding: 40rpx 20rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+}
+
+.feature-item {
+  width: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 10rpx;
+  transition: transform 0.3s ease;
+}
+
+.feature-item:active {
+  transform: scale(0.95);
+}
+
+.feature-icon {
+  width: 100rpx;
+  height: 100rpx;
+  margin-bottom: 15rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.1);
+}
+
+.feature-item text {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 精选昆虫 */
+.section {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10rpx);
+  margin: 20rpx;
+  border-radius: 20rpx;
+  padding: 0 30rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 0;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.section-title text {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  position: relative;
+}
+
+.section-title text::after {
+  content: '';
+  position: absolute;
+  bottom: -10rpx;
+  left: 0;
+  width: 60rpx;
+  height: 4rpx;
+  background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%);
+  border-radius: 2rpx;
+}
+
+.more {
+  font-size: 28rpx;
+  color: #4CAF50;
+  font-weight: 500;
+  padding: 10rpx 20rpx;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 20rpx;
+  transition: all 0.3s ease;
+}
+
+.more:active {
+  background: rgba(76, 175, 80, 0.2);
+  transform: scale(0.95);
+}
+
+.insect-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 20rpx 0 30rpx;
+  gap: 20rpx;
+}
+
+.insect-item {
+  width: calc(33.333% - 14rpx);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 15rpx;
+  background: white;
+  border-radius: 15rpx;
+  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.insect-item:active {
+  transform: translateY(-4rpx);
+  box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.15);
+}
+
+.insect-img {
+  width: 100%;
+  height: 180rpx;
+  border-radius: 12rpx;
+  margin-bottom: 15rpx;
+  object-fit: cover;
+}
+
+.insect-name {
+  font-size: 28rpx;
+  color: #333;
+  text-align: center;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200rpx;
+  color: white;
+  font-size: 28rpx;
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.insect-item {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.insect-item:nth-child(1) { animation-delay: 0.1s; }
+.insect-item:nth-child(2) { animation-delay: 0.2s; }
+.insect-item:nth-child(3) { animation-delay: 0.3s; }
+.insect-item:nth-child(4) { animation-delay: 0.4s; }
+.insect-item:nth-child(5) { animation-delay: 0.5s; }
+.insect-item:nth-child(6) { animation-delay: 0.6s; }

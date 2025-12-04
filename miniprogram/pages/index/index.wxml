@@ -1,0 +1,56 @@
+<view class="container">
+  <!-- 搜索框 -->
+  <view class="search-box">
+    <view class="search-input">
+      <icon type="search" size="16" color="#999"></icon>
+      <input placeholder="搜索昆虫名称..." placeholder-class="placeholder-style" />
+    </view>
+  </view>
+
+  <!-- 轮播图 -->
+  <view class="swiper-container">
+    <swiper indicator-dots="{{true}}" autoplay="{{true}}" interval="5000" duration="1000">
+      <block wx:for="{{swiperList}}" wx:key="id">
+        <swiper-item>
+          <image src="{{item.image}}" mode="widthFix" class="swiper-image" />
+        </swiper-item>
+      </block>
+    </swiper>
+  </view>
+
+  <!-- 功能入口 -->
+  <view class="features">
+    <view class="feature-item" bindtap="goToCategory">
+      <image src="/images/icons/book.png" class="feature-icon" />
+      <text>昆虫图鉴</text>
+    </view>
+    <view class="feature-item" bindtap="goToGame">
+      <image src="/images/icons/game.png" class="feature-icon" />
+      <text>互动游戏</text>
+    </view>
+    <view class="feature-item" bindtap="goToTheater">
+      <image src="/images/icons/video.png" class="feature-icon" />
+      <text>虫虫剧场</text>
+    </view>
+    <view class="feature-item" bindtap="goToPosts">
+      <image src="/images/icons/post.png" class="feature-icon" />
+      <text>观察分享</text>
+    </view>
+  </view>
+
+  <!-- 精选昆虫 -->
+  <view class="section">
+    <view class="section-title">
+      <text>精选昆虫</text>
+      <view class="more" bindtap="goToCategory">更多</view>
+    </view>
+    <view class="insect-grid">
+      <block wx:for="{{featuredInsects}}" wx:key="id">
+        <view class="insect-item" bindtap="goToDetail" data-id="{{item.id}}">
+          <image src="{{item.image}}" class="insect-img" mode="widthFix" />
+          <text class="insect-name">{{item.name}}</text>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,91 @@
+<!--pages/observation/observation.wxml-->
+<view class="container">
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 观察记录表单 -->
+  <view wx:else class="form-container">
+    <!-- 昆虫信息 -->
+    <view wx:if="{{insectInfo}}" class="insect-info">
+      <image class="insect-image" src="{{insectInfo.child_image_url || insectInfo.adult_image_url}}" mode="aspectFit"></image>
+      <view class="insect-details">
+        <text class="insect-name">{{insectInfo.name}}</text>
+        <text class="insect-type">{{insectInfo.type}}</text>
+      </view>
+    </view>
+
+    <!-- 观察地点 -->
+    <view class="form-item">
+      <text class="label">观察地点 *</text>
+      <input 
+        class="input" 
+        placeholder="请输入观察地点" 
+        value="{{observationData.location}}"
+        bindinput="onInputChange"
+        data-field="location"
+      />
+    </view>
+
+    <!-- 观察时间 -->
+    <view class="form-item">
+      <text class="label">观察时间 *</text>
+      <picker 
+        mode="multiSelector" 
+        range="{{timeRange}}"
+        bindchange="onTimeChange"
+      >
+        <view class="picker">
+          {{observationData.time || '请选择观察时间'}}
+        </view>
+      </picker>
+    </view>
+
+    <!-- 照片 -->
+    <view class="form-item">
+      <text class="label">观察照片</text>
+      <view class="photo-section">
+        <view wx:if="{{!observationData.photoUrl}}" class="photo-placeholder" bindtap="chooseImage">
+          <text class="photo-icon">📷</text>
+          <text class="photo-text">点击添加照片</text>
+        </view>
+        <view wx:else class="photo-preview">
+          <image class="preview-image" src="{{observationData.photoUrl}}" mode="aspectFill" bindtap="previewImage"></image>
+          <view class="photo-actions">
+            <button class="action-btn" bindtap="previewImage">预览</button>
+            <button class="action-btn delete" bindtap="deleteImage">删除</button>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 观察备注 -->
+    <view class="form-item">
+      <text class="label">观察备注</text>
+      <textarea 
+        class="textarea" 
+        placeholder="记录你的观察发现..." 
+        value="{{observationData.notes}}"
+        bindinput="onInputChange"
+        data-field="notes"
+        maxlength="500"
+      ></textarea>
+      <text class="char-count">{{observationData.notes.length}}/500</text>
+    </view>
+
+    <!-- 提交按钮 -->
+    <view class="submit-section">
+      <button 
+        class="submit-btn {{submitting ? 'loading' : ''}}" 
+        bindtap="submitObservation"
+        disabled="{{submitting}}"
+      >
+        {{submitting ? '保存中...' : '保存观察记录'}}
+      </button>
+      <button class="cancel-btn" bindtap="goBack">取消</button>
+    </view>
+  </view>
+</view>
+
+

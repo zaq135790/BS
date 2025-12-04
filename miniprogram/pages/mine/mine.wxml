@@ -1,0 +1,158 @@
+<view class="container">
+  <!-- 顶部用户信息区域 -->
+  <view class="profile-card" style="background-image: url({{profileBackground}});">
+    <view class="profile-overlay"></view>
+    <view class="profile-content">
+      <view class="avatar-wrapper" bindtap="changeAvatar">
+        <image class="avatar" src="{{userInfo.avatar_url || '/images/default-avatar.png'}}" mode="aspectFill" />
+        <view class="avatar-edit-icon">✏️</view>
+      </view>
+      <text class="nickname">{{userInfo.nickname || '虫虫探险者'}}</text>
+      <text class="role-badge">{{userInfo.user_type === 'parent' ? '家长' : '儿童'}}</text>
+    </view>
+    <view class="card-action" bindtap="openBackgroundPicker">
+      <text>修改名片</text>
+    </view>
+  </view>
+
+  <!-- 身份切换区域 -->
+  <view class="identity-switch-section">
+    <view class="section-title">身份切换</view>
+    <view class="identity-icons">
+      <view class="identity-icon-wrapper {{userInfo.user_type === 'child' ? 'active' : ''}}" bindtap="switchIdentity" data-type="child">
+        <view class="identity-icon child-icon">
+          <text class="icon-emoji">👶</text>
+        </view>
+        <text class="identity-label">儿童</text>
+      </view>
+      <view class="identity-icon-wrapper {{userInfo.user_type === 'parent' ? 'active' : ''}}" bindtap="switchIdentity" data-type="parent">
+        <view class="identity-icon parent-icon">
+          <text class="icon-emoji">👨‍👩</text>
+        </view>
+        <text class="identity-label">家长</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 浏览记录 -->
+  <view class="browse-history-section">
+    <view class="section-header">
+      <text class="section-title">浏览记录</text>
+      <text class="section-subtitle">{{userInfo.user_type === 'parent' ? '家长' : '儿童'}}身份下的浏览记录</text>
+    </view>
+    <view class="browse-stats">
+      <view class="browse-stat-item">
+        <text class="stat-number">{{browseHistory.length}}</text>
+        <text class="stat-label">已浏览昆虫</text>
+      </view>
+    </view>
+    <view class="browse-list" wx:if="{{browseHistory.length > 0}}">
+      <view wx:for="{{browseHistory}}" wx:key="insectId" class="browse-item" bindtap="goToInsectDetail" data-id="{{item.insectId}}">
+        <image class="browse-image" src="{{item.image}}" mode="aspectFill" />
+        <view class="browse-info">
+          <text class="browse-name">{{item.name}}</text>
+          <text class="browse-time">{{formatBrowseTime(item.browseTime)}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="empty-browse" wx:else>
+      <text class="empty-icon">🔍</text>
+      <text class="empty-text">还没有浏览记录，快去探索虫虫图鉴吧！</text>
+    </view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="menu-section">
+    <!-- 儿童身份功能 -->
+    <block wx:if="{{userInfo.user_type === 'child'}}">
+      <view class="menu-item" bindtap="goToCategory">
+        <text class="menu-icon">📖</text>
+        <view class="menu-content">
+          <text class="menu-text">浏览虫虫图鉴</text>
+          <text class="menu-desc">探索昆虫世界</text>
+        </view>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" bindtap="goToGame">
+        <text class="menu-icon">🎮</text>
+        <view class="menu-content">
+          <text class="menu-text">玩小游戏</text>
+          <text class="menu-desc">益害判官、虫虫拼图</text>
+        </view>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" bindtap="goToTheater">
+        <text class="menu-icon">🎬</text>
+        <view class="menu-content">
+          <text class="menu-text">观看虫虫小剧场</text>
+          <text class="menu-desc">精彩视频内容</text>
+        </view>
+        <text class="menu-arrow">></text>
+      </view>
+    </block>
+
+    <!-- 家长身份功能 -->
+    <block wx:else>
+      <view class="menu-item" bindtap="goToCommunity">
+        <text class="menu-icon">💬</text>
+        <view class="menu-content">
+          <text class="menu-text">社区互动参与</text>
+          <text class="menu-desc">发表帖子、参与讨论</text>
+        </view>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" bindtap="goToKnowledgeBase">
+        <text class="menu-icon">📚</text>
+        <view class="menu-content">
+          <text class="menu-text">科普知识库</text>
+          <text class="menu-desc">丰富的昆虫知识</text>
+        </view>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" bindtap="goToInsectRecognition">
+        <text class="menu-icon">🔍</text>
+        <view class="menu-content">
+          <text class="menu-text">昆虫识别</text>
+          <text class="menu-desc">智能识别昆虫</text>
+        </view>
+        <text class="menu-arrow">></text>
+      </view>
+    </block>
+
+    <!-- 通用功能 -->
+    <view class="menu-item" bindtap="goToGameRecords">
+      <text class="menu-icon">📊</text>
+      <view class="menu-content">
+        <text class="menu-text">游戏记录</text>
+        <text class="menu-desc">查看游戏成绩</text>
+      </view>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="goToObservations">
+      <text class="menu-icon">📝</text>
+      <view class="menu-content">
+        <text class="menu-text">观察记录</text>
+        <text class="menu-desc">我的观察分享</text>
+      </view>
+      <text class="menu-arrow">></text>
+    </view>
+  </view>
+
+  <!-- 背景名片选择器 -->
+  <view class="background-picker-mask {{showBackgroundPicker ? 'show' : ''}}" bindtap="closeBackgroundPicker">
+    <view class="background-picker" catchtap="stopPropagation">
+      <view class="picker-title">选择名片背景</view>
+      <view class="picker-grid">
+        <view class="picker-item {{profileBackground === item ? 'selected' : ''}}" wx:for="{{backgroundOptions}}" wx:key="item" data-url="{{item}}" bindtap="selectBackground">
+          <image src="{{item}}" mode="aspectFill"></image>
+          <view class="picker-check" wx:if="{{profileBackground === item}}">✓</view>
+        </view>
+      </view>
+      <view class="picker-actions">
+        <button class="picker-btn" bindtap="uploadBackground">上传照片</button>
+        <button class="picker-btn secondary" bindtap="useRandomBackground">随机一张</button>
+      </view>
+      <button class="picker-close" bindtap="closeBackgroundPicker">完成</button>
+    </view>
+  </view>
+</view>

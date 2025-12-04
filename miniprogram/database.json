@@ -1,0 +1,44 @@
+{
+  "collections": [
+    {
+      "id": "insect_posts",
+      "description": "用户发布的昆虫观察帖子",
+      "permissions": {
+        "read": true,
+        "write": "auth != null"
+      }
+    },
+    {
+      "id": "users",
+      "description": "用户信息",
+      "permissions": {
+        "read": "doc.openid == auth.openid",
+        "write": "doc.openid == auth.openid"
+      }
+    },
+    {
+      "id": "insects",
+      "description": "昆虫图鉴数据",
+      "permissions": {
+        "read": true,
+        "write": false
+      }
+    },
+    {
+      "id": "game_records",
+      "description": "游戏记录",
+      "permissions": {
+        "read": "doc.openid == auth.openid",
+        "write": "auth != null"
+      }
+    },
+    {
+      "id": "videos",
+      "description": "小剧场视频数据",
+      "permissions": {
+        "read": true,
+        "write": false
+      }
+    }
+  ]
+}

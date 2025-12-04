@@ -1,0 +1,170 @@
+/* pages/video/video.wxss */
+.container {
+  position: relative;
+  min-height: 100vh;
+  background: #000;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: white;
+  font-size: 32rpx;
+}
+
+.video-container {
+  background: #000;
+}
+
+.video-player {
+  width: 100%;
+  height: 400rpx;
+  background: #000;
+}
+
+.video-player.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+}
+
+.video-info {
+  padding: 30rpx;
+  background: white;
+}
+
+.video-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15rpx;
+  line-height: 1.4;
+}
+
+.video-meta {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.insect-name {
+  background: #e8f5e8;
+  color: #4CAF50;
+  padding: 5rpx 15rpx;
+  border-radius: 20rpx;
+  font-weight: bold;
+}
+
+.duration {
+  color: #999;
+}
+
+.view-count {
+  color: #999;
+}
+
+.video-description {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+.video-controls {
+  display: flex;
+  gap: 20rpx;
+  padding: 30rpx;
+  background: white;
+  border-top: 1rpx solid #eee;
+}
+
+.control-btn {
+  flex: 1;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 25rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.recommendations {
+  padding: 30rpx;
+  background: white;
+  margin-top: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.video-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.recommend-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  background: #f8f8f8;
+  border-radius: 15rpx;
+}
+
+.recommend-thumb {
+  width: 120rpx;
+  height: 80rpx;
+  border-radius: 10rpx;
+  margin-right: 20rpx;
+}
+
+.recommend-info {
+  flex: 1;
+}
+
+.recommend-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.recommend-duration {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.back-btn {
+  position: fixed;
+  top: 60rpx;
+  left: 30rpx;
+  width: 80rpx;
+  height: 80rpx;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.back-icon {
+  color: white;
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+

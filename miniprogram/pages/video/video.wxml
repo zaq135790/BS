@@ -1,0 +1,71 @@
+<!--pages/video/video.wxml-->
+<view class="container">
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 视频播放器 -->
+  <view wx:else class="video-container">
+    <!-- 视频播放器 -->
+    <video 
+      class="video-player {{fullscreen ? 'fullscreen' : ''}}"
+      src="{{videoInfo.video_url}}"
+      poster="{{videoInfo.thumbnail_url}}"
+      bindplay="onVideoPlay"
+      bindpause="onVideoPause"
+      bindtimeupdate="onVideoTimeUpdate"
+      bindended="onVideoEnded"
+      controls
+      show-center-play-btn
+      enable-progress-gesture
+      object-fit="contain"
+    ></video>
+
+    <!-- 视频信息 -->
+    <view class="video-info">
+      <view class="video-title">{{videoInfo.title}}</view>
+      <view class="video-meta">
+        <text class="insect-name">{{videoInfo.insect_name}}</text>
+        <text class="duration">{{formatTime(videoInfo.duration)}}</text>
+        <text class="view-count">{{videoInfo.view_count}} 次观看</text>
+      </view>
+      <view class="video-description">{{videoInfo.description}}</view>
+    </view>
+
+    <!-- 控制按钮 -->
+    <view class="video-controls">
+      <button class="control-btn" bindtap="toggleFullscreen">
+        {{fullscreen ? '退出全屏' : '全屏播放'}}
+      </button>
+      <button class="control-btn" open-type="share">分享视频</button>
+    </view>
+
+    <!-- 相关推荐 -->
+    <view class="recommendations">
+      <view class="section-title">相关视频</view>
+      <view class="video-list">
+        <!-- 这里可以显示相关视频列表 -->
+        <view class="recommend-item">
+          <image class="recommend-thumb" src="/images/video_thumb1.jpg" mode="aspectFill"></image>
+          <view class="recommend-info">
+            <text class="recommend-title">七星瓢虫的一天</text>
+            <text class="recommend-duration">2:30</text>
+          </view>
+        </view>
+        <view class="recommend-item">
+          <image class="recommend-thumb" src="/images/video_thumb2.jpg" mode="aspectFill"></image>
+          <view class="recommend-info">
+            <text class="recommend-title">螳螂的捕食技巧</text>
+            <text class="recommend-duration">4:12</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 返回按钮 -->
+  <view class="back-btn" bindtap="goBack">
+    <text class="back-icon">←</text>
+  </view>
+</view>
