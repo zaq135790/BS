@@ -3,16 +3,26 @@
   <view class="search-box">
     <view class="search-input">
       <icon type="search" size="16" color="#999"></icon>
-      <input placeholder="搜索昆虫名称..." placeholder-class="placeholder-style" />
+      <input placeholder="搜索昆虫名称..." placeholder-class="placeholder-style" value="{{searchKeyword}}" bindinput="onSearchInput" />
+    </view>
+    <!-- 搜索结果 -->
+    <view class="search-results" wx:if="{{showSearchResults && searchResults.length > 0}}">
+      <view class="search-result-item" wx:for="{{searchResults}}" wx:key="id" bindtap="selectSearchResult" data-index="{{index}}">
+        <text class="result-name">{{item.name}}</text>
+        <text class="result-type">{{item.type}}</text>
+      </view>
+    </view>
+    <view class="search-results empty" wx:if="{{showSearchResults && searchResults.length === 0}}">
+      <text>没有找到相关昆虫</text>
     </view>
   </view>
 
   <!-- 轮播图 -->
   <view class="swiper-container">
-    <swiper indicator-dots="{{true}}" autoplay="{{true}}" interval="5000" duration="1000">
+    <swiper indicator-dots="{{true}}" autoplay="{{true}}" interval="3000" duration="500" circular="{{true}}">
       <block wx:for="{{swiperList}}" wx:key="id">
         <swiper-item>
-          <image src="{{item.image}}" mode="widthFix" class="swiper-image" />
+          <image src="{{item.image}}" mode="widthFix" class="swiper-image" catchtap="onSwiperTap" />
         </swiper-item>
       </block>
     </swiper>
@@ -22,11 +32,11 @@
   <view class="features">
     <view class="feature-item" bindtap="goToCategory">
       <image src="/images/icons/book.png" class="feature-icon" />
-      <text>昆虫图鉴</text>
+      <text>虫虫图鉴</text>
     </view>
     <view class="feature-item" bindtap="goToGame">
       <image src="/images/icons/game.png" class="feature-icon" />
-      <text>互动游戏</text>
+      <text>趣味小游戏</text>
     </view>
     <view class="feature-item" bindtap="goToTheater">
       <image src="/images/icons/video.png" class="feature-icon" />
@@ -34,7 +44,11 @@
     </view>
     <view class="feature-item" bindtap="goToPosts">
       <image src="/images/icons/post.png" class="feature-icon" />
-      <text>观察分享</text>
+      <text>畅所欲言</text>
+    </view>
+    <view class="feature-item" bindtap="goToKnowledgeBase">
+      <image src="/images/icons/book.png" class="feature-icon" />
+      <text>科普知识库</text>
     </view>
   </view>
 
@@ -42,13 +56,16 @@
   <view class="section">
     <view class="section-title">
       <text>精选昆虫</text>
-      <view class="more" bindtap="goToCategory">更多</view>
+      <view class="more" bindtap="refreshFeaturedInsects">换一换</view>
     </view>
-    <view class="insect-grid">
+    <view class="insect-list">
       <block wx:for="{{featuredInsects}}" wx:key="id">
-        <view class="insect-item" bindtap="goToDetail" data-id="{{item.id}}">
-          <image src="{{item.image}}" class="insect-img" mode="widthFix" />
-          <text class="insect-name">{{item.name}}</text>
+        <view class="insect-item-row" bindtap="goToDetail" data-index="{{index}}">
+          <image src="{{item.image}}" class="insect-img" mode="aspectFill" />
+          <view class="insect-info">
+            <text class="insect-name">{{item.name}}</text>
+            <text class="insect-desc">{{item.childDesc}}</text>
+          </view>
         </view>
       </block>
     </view>

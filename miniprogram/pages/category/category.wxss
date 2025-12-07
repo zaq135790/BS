@@ -47,17 +47,20 @@
   background: rgba(76, 175, 80, 0.05);
 }
 
-/* 昆虫列表 */
+/* 昆虫列表：单列，上下排列，左图右文 */
 .insect-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   padding: 20rpx;
   gap: 20rpx;
   box-sizing: border-box;
 }
 
 .insect-card {
-  width: calc(50% - 10rpx);
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10rpx);
   border-radius: 20rpx;
@@ -72,13 +75,17 @@
 }
 
 .insect-image {
-  width: 100%;
-  height: 240rpx;
+  width: 220rpx;
+  height: 220rpx;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .insect-info {
-  padding: 25rpx 20rpx;
+  padding: 25rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .insect-name {
@@ -94,10 +101,36 @@
   font-size: 26rpx;
   color: #666;
   line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 家长版科普信息：图文分离，文字更大更清晰（约 16px => 32rpx） */
+.parent-card {
+  align-items: flex-start;
+}
+
+.parent-info {
+  justify-content: flex-start;
+}
+
+.adult-text-row {
+  display: flex;
+  margin-top: 10rpx;
+}
+
+.adult-label {
+  font-size: 28rpx;
+  color: #555;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.adult-content {
+  font-size: 32rpx; /* 约 16px */
+  color: #444;
+  line-height: 1.6;
+  margin-left: 10rpx;
 }
 
 /* 加载状态 */

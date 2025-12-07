@@ -10,6 +10,7 @@
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10rpx);
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .search-input {
@@ -39,6 +40,54 @@
   color: #333;
 }
 
+/* 搜索结果 */
+.search-results {
+  margin-top: 20rpx;
+  background: white;
+  border-radius: 16rpx;
+  max-height: 400rpx;
+  overflow-y: auto;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.search-results.empty {
+  padding: 40rpx;
+  text-align: center;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.search-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  transition: background 0.3s ease;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:active {
+  background: #f8f9fa;
+}
+
+.result-name {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.result-type {
+  font-size: 24rpx;
+  color: #4CAF50;
+  padding: 6rpx 16rpx;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 20rpx;
+}
+
 /* 轮播图 */
 .swiper-container {
   margin: 20rpx;
@@ -66,7 +115,7 @@
 }
 
 .feature-item {
-  width: 25%;
+  width: 20%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -87,9 +136,10 @@
 }
 
 .feature-item text {
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: #333;
   font-weight: 500;
+  text-align: center;
 }
 
 /* 精选昆虫 */
@@ -143,47 +193,55 @@
   transform: scale(0.95);
 }
 
-.insect-grid {
+.insect-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   padding: 20rpx 0 30rpx;
   gap: 20rpx;
 }
 
-.insect-item {
-  width: calc(33.333% - 14rpx);
+.insect-item-row {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  padding: 20rpx 15rpx;
+  padding: 20rpx;
   background: white;
   border-radius: 15rpx;
   box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
 }
 
-.insect-item:active {
-  transform: translateY(-4rpx);
+.insect-item-row:active {
+  transform: translateX(4rpx);
   box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.15);
 }
 
-.insect-img {
-  width: 100%;
-  height: 180rpx;
+.insect-item-row .insect-img {
+  width: 160rpx;
+  height: 160rpx;
   border-radius: 12rpx;
-  margin-bottom: 15rpx;
+  margin-right: 20rpx;
   object-fit: cover;
+  flex-shrink: 0;
+}
+
+.insect-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
 }
 
 .insect-name {
-  font-size: 28rpx;
+  font-size: 32rpx;
   color: #333;
-  text-align: center;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
+  font-weight: bold;
+}
+
+.insect-desc {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
 }
 
 /* 加载状态 */

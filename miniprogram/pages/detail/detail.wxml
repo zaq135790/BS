@@ -1,78 +1,37 @@
 <view class="container">
-  <!-- 顶部图片 -->
-  <view class="top-image">
-    <image src="{{insectData.image}}" mode="widthFix" class="main-image" />
-  </view>
-
-  <!-- 切换按钮 -->
-  <view class="version-switch">
-    <button class="switch-btn {{currentVersion === 'child' ? 'active' : ''}}" bindtap="switchVersion" data-version="child">
-      儿童版
-    </button>
-    <button class="switch-btn {{currentVersion === 'adult' ? 'active' : ''}}" bindtap="switchVersion" data-version="adult">
-      成人版
-    </button>
+  <!-- 顶部动画视频（后期导入） -->
+  <view class="video-container">
+    <video 
+      wx:if="{{videoUrl}}"
+      src="{{videoUrl}}" 
+      controls 
+      class="main-video"
+      show-center-play-btn="{{true}}"
+      enable-play-gesture="{{true}}"
+    ></video>
+    <view wx:else class="video-placeholder">
+      <text class="placeholder-text">🎬 动画视频（待导入）</text>
+    </view>
   </view>
 
   <!-- 详情内容 -->
   <view class="content">
     <view class="title">{{insectData.name}}</view>
+    <view class="type-badge">{{insectData.type}}</view>
     
-    <view class="info-section" wx:if="{{currentVersion === 'child'}}">
-      <view class="section-title">昆虫口诀</view>
-      <view class="section-content">
-        <text>{{insectData.childRhyme}}</text>
+    <!-- 昆虫口诀 -->
+    <view class="info-section rhyme-section">
+      <view class="section-title">📝 昆虫口诀</view>
+      <view class="section-content rhyme-content">
+        <text class="rhyme-text">{{insectData.rhyme}}</text>
       </view>
     </view>
 
-    <view class="info-section" wx:if="{{currentVersion === 'adult'}}">
-      <view class="section-title">识别要点</view>
-      <view class="section-content">
-        <view class="point" wx:for="{{insectData.identifyPoints}}" wx:key="index">
-          <view class="point-icon">•</view>
-          <text>{{item}}</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="info-section">
-      <view class="section-title">{{currentVersion === 'child' ? '昆虫小知识' : '生活习性'}}</view>
-      <view class="section-content">
-        <text>{{currentVersion === 'child' ? insectData.childDesc : insectData.adultDesc}}</text>
-      </view>
-    </view>
-
-    <view class="info-section" wx:if="{{currentVersion === 'adult'}}">
-      <view class="section-title">家庭指引</view>
-      <view class="section-content">
-        <text>{{insectData.familyGuidance}}</text>
-      </view>
-    </view>
-  </view>
-
-  <!-- 操作按钮 -->
-  <view class="action-buttons">
-    <button class="action-btn" bindtap="startGame" data-type="judge">
-      益害判官
-    </button>
-    <button class="action-btn secondary" bindtap="startGame" data-type="puzzle">
-      虫虫拼图
-    </button>
-    <button class="action-btn secondary" bindtap="recordObservation">
-      记录观察
-    </button>
-  </view>
-
-  <!-- 相关视频 -->
-  <view wx:if="{{videos.length > 0}}" class="video-section">
-    <view class="section-title">相关视频</view>
-    <view class="video-list">
-      <view wx:for="{{videos}}" wx:key="id" class="video-item" bindtap="playVideo" data-id="{{item.id}}">
-        <image class="video-thumb" src="{{item.thumbnail_url}}" mode="aspectFill"></image>
-        <view class="video-info">
-          <text class="video-title">{{item.title}}</text>
-          <text class="video-duration">{{item.duration}}</text>
-        </view>
+    <!-- 昆虫小知识 -->
+    <view class="info-section knowledge-section">
+      <view class="section-title">💡 昆虫小知识</view>
+      <view class="section-content knowledge-content">
+        <text class="knowledge-text">{{insectData.knowledge}}</text>
       </view>
     </view>
   </view>

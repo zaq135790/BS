@@ -9,14 +9,32 @@
     </view>
   </view>
 
-  <!-- 昆虫列表 -->
+  <!-- 昆虫列表：根据身份展示不同内容 -->
   <view class="insect-list">
+    <!-- 儿童版：虫虫图鉴（动漫图 + 启蒙口诀） -->
     <block wx:for="{{currentInsects}}" wx:key="id">
-      <view class="insect-card" bindtap="goToDetail" data-id="{{item.id}}">
-        <image src="{{item.image}}" class="insect-image" mode="widthFix" />
+      <!-- 儿童版：虫虫图鉴（动漫图 + 启蒙口诀） -->
+      <view wx:if="{{role === 'child'}}" class="insect-card" bindtap="goToDetail" data-index="{{index}}">
+        <image src="{{item.image}}" class="insect-image" mode="aspectFill" />
         <view class="insect-info">
           <text class="insect-name">{{item.name}}</text>
-          <text class="insect-desc">{{item.shortDesc}}</text>
+          <text class="insect-desc">{{item.childDesc}}</text>
+        </view>
+      </view>
+
+      <!-- 家长版：科普知识库（真实照片 + 白话文科普） -->
+      <view wx:if="{{role === 'parent'}}" class="insect-card parent-card" bindtap="goToDetail" data-index="{{index}}">
+        <image src="{{item.image}}" class="insect-image" mode="aspectFill" />
+        <view class="insect-info parent-info">
+          <text class="insect-name">{{item.name}}</text>
+          <view class="adult-text-row">
+            <text class="adult-label">怎么认：</text>
+            <text class="adult-content">{{item.identify}}</text>
+          </view>
+          <view class="adult-text-row">
+            <text class="adult-label">如何做：</text>
+            <text class="adult-content">{{item.guide}}</text>
+          </view>
         </view>
       </view>
     </block>

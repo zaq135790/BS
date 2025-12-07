@@ -61,8 +61,8 @@
     </view>
   </view>
 
-  <!-- 功能菜单 -->
-  <view class="menu-section">
+  <!-- 功能菜单，随身份切换加入淡入动画 -->
+  <view class="menu-section {{roleSwitching ? 'menu-fade' : ''}}">
     <!-- 儿童身份功能 -->
     <block wx:if="{{userInfo.user_type === 'child'}}">
       <view class="menu-item" bindtap="goToCategory">

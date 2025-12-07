@@ -9,12 +9,15 @@ Page({
     browseDays: 0, // 浏览天数
     profileBackground: '',
     showBackgroundPicker: false,
+    // 名片背景可选图片，使用绝对路径，便于在 style 中直接使用
     backgroundOptions: [
-      '../../images/bj1(1).png',
-      '../../images/bj2(1).png',
-      '../../images/bj3(1).png',
-      '../../images/bj4(1).png'
-    ]
+      '/images/bj1(1).png',
+      '/images/bj2(1).png',
+      '/images/bj3(1).png',
+      '/images/bj4(1).png'
+    ],
+    // 身份切换动画标记
+    roleSwitching: false
   },
 
   async onLoad() {
@@ -31,11 +34,23 @@ Page({
   // 加载用户信息
   async loadUserInfo() {
     const app = getApp();
+    const userId = app.globalData.userId || app.globalData.openid || 'default';
+    const userInfoKey = `user_info_${userId}`;
     
     try {
-      // 从全局数据获取用户信息
-      if (app.globalData.userInfo) {
-        // 从数据库获取最新用户信息
+      // 优先从本地存储读取
+      let storedUserInfo = wx.getStorageSync(userInfoKey);
+      
+      if (storedUserInfo && storedUserInfo.nickname) {
+        // 本地有数据，直接使用
+        this.setData({
+          userInfo: storedUserInfo
+        });
+        return;
+      }
+      
+      // 本地没有数据，尝试从数据库获取
+      if (app.globalData.userInfo && app.globalData.openid) {
         const result = await app.callDatabase('getUserInfo', {
           openid: app.globalData.openid
         });
@@ -44,36 +59,40 @@ Page({
           const userInfo = {
             nickname: result.data.nickname || '新用户',
             avatar_url: result.data.avatar_url || '',
-            user_type: result.data.user_type || 'parent'
+            user_type: result.data.user_type || 'child'  // 默认儿童版本
           };
           this.setData({
             userInfo: userInfo
           });
-          // 保存到本地存储
-          const userId = app.globalData.userId || app.globalData.openid || 'default';
-          const userInfoKey = `user_info_${userId}`;
           wx.setStorageSync(userInfoKey, userInfo);
-        } else {
-          // 使用全局数据
-          const userInfo = {
-            nickname: app.globalData.userInfo.nickName || '新用户',
-            avatar_url: app.globalData.userInfo.avatarUrl || '',
-            user_type: 'parent'
-          };
-          this.setData({
-            userInfo: userInfo
-          });
-          // 保存到本地存储
-          const userId = app.globalData.userId || app.globalData.openid || 'default';
-          const userInfoKey = `user_info_${userId}`;
-          wx.setStorageSync(userInfoKey, userInfo);
+          return;
         }
-      } else {
-        // 如果没有用户信息，尝试登录
-        await this.login();
       }
+      
+      // 如果都没有，使用全局数据或默认值
+      const userInfo = {
+        nickname: (app.globalData.userInfo && app.globalData.userInfo.nickName) || '新用户',
+        avatar_url: (app.globalData.userInfo && app.globalData.userInfo.avatarUrl) || '',
+        user_type: 'child'  // 初始注册默认儿童版本
+      };
+      this.setData({
+        userInfo: userInfo
+      });
+      wx.setStorageSync(userInfoKey, userInfo);
     } catch (error) {
       console.error('加载用户信息失败:', error);
+      // 出错时使用默认值
+      const userInfo = {
+        nickname: '新用户',
+        avatar_url: '',
+        user_type: 'child'
+      };
+      this.setData({
+        userInfo: userInfo
+      });
+      const userId = app.globalData.userId || app.globalData.openid || 'default';
+      const userInfoKey = `user_info_${userId}`;
+      wx.setStorageSync(userInfoKey, userInfo);
     }
   },
 
@@ -122,9 +141,11 @@ Page({
     });
   },
 
-  // 更新用户信息
+  // 更新用户信息（优先本地存储，失败不影响使用）
   async updateUserInfo(updateData) {
     const app = getApp();
+    const userId = app.globalData.userId || app.globalData.openid || 'default';
+    const userInfoKey = `user_info_${userId}`;
     
     try {
       // 合并更新数据
@@ -133,40 +154,35 @@ Page({
         ...updateData
       };
       
-      const result = await app.callDatabase('saveUserInfo', {
-        openid: app.globalData.openid,
-        nickname: updatedUserInfo.nickname,
-        avatarUrl: updatedUserInfo.avatar_url,
-        userType: updatedUserInfo.user_type
+      // 先更新本地存储（确保立即生效）
+      this.setData({
+        userInfo: updatedUserInfo
       });
+      wx.setStorageSync(userInfoKey, updatedUserInfo);
       
-      if (result.success) {
-        // 更新本地数据
-        this.setData({
-          userInfo: updatedUserInfo
-        });
-        
-        // 保存用户信息到本地存储（供其他页面使用）
-        const userId = app.globalData.userId || app.globalData.openid || 'default';
-        const userInfoKey = `user_info_${userId}`;
-        wx.setStorageSync(userInfoKey, updatedUserInfo);
-        
-        wx.showToast({
-          title: '更新成功',
-          icon: 'success'
-        });
-      } else {
-        wx.showToast({
-          title: '更新失败',
-          icon: 'none'
-        });
+      // 尝试同步到云端（失败不影响本地使用）
+      if (app.globalData.openid) {
+        try {
+          const result = await app.callDatabase('saveUserInfo', {
+            openid: app.globalData.openid,
+            nickname: updatedUserInfo.nickname,
+            avatarUrl: updatedUserInfo.avatar_url,
+            userType: updatedUserInfo.user_type
+          });
+          // 云端同步成功或失败都不影响本地使用
+          if (!result.success) {
+            console.log('云端同步失败，但本地已更新');
+          }
+        } catch (cloudError) {
+          console.log('云端同步出错，但本地已更新:', cloudError);
+        }
       }
+      
+      // 本地更新成功即返回成功
+      return true;
     } catch (error) {
       console.error('更新用户信息失败:', error);
-      wx.showToast({
-        title: '更新失败',
-        icon: 'none'
-      });
+      return false;
     }
   },
 
@@ -188,26 +204,40 @@ Page({
       content: `是否切换为${roleName}角色？`,
       success: async (res) => {
         if (res.confirm) {
-          // 执行切换
-          await this.updateUserInfo({
+          // 执行切换（优先本地存储）
+          const success = await this.updateUserInfo({
             user_type: targetType
           });
           
-          // 更新本地数据
-          this.setData({
-            'userInfo.user_type': targetType
-          });
-          
-          // 重新加载浏览记录（因为不同身份有不同的浏览记录）
-          await this.loadBrowseHistory();
-          
-          // 显示切换成功提示
-          wx.showModal({
-            title: '切换成功',
-            content: '切换成功，您可以自由探索了！',
-            showCancel: false,
-            confirmText: '知道了'
-          });
+          if (success) {
+            // 更新本地数据并触发简单淡入动画
+            this.setData({
+              'userInfo.user_type': targetType,
+              roleSwitching: true
+            });
+
+            // 重新加载浏览记录（因为不同身份有不同的浏览记录）
+            await this.loadBrowseHistory();
+
+            // 轻微延时后移除动画标记，避免数据混乱
+            setTimeout(() => {
+              this.setData({
+                roleSwitching: false
+              });
+            }, 300);
+            
+            // 显示切换成功提示
+            wx.showToast({
+              title: '切换成功',
+              icon: 'success',
+              duration: 1500
+            });
+          } else {
+            wx.showToast({
+              title: '切换失败，请重试',
+              icon: 'none'
+            });
+          }
         }
       }
     });
@@ -279,7 +309,13 @@ Page({
     const bgKey = `profile_bg_${userId}`;
     wx.setStorageSync(bgKey, url);
     this.setData({
-      profileBackground: url
+      profileBackground: url,
+      showBackgroundPicker: false  // 选择后关闭选择器
+    });
+    wx.showToast({
+      title: '背景已更新',
+      icon: 'success',
+      duration: 1500
     });
   },
 
