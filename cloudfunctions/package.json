@@ -1,0 +1,47 @@
+{
+  "name": "insect-id-cloud-functions",
+  "version": "1.0.0",
+  "description": "Cloud functions for the insect identification mini program",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "tcb fn deploy -e your-env-id",
+    "deploy:all": "tcb fn deploy -e your-env-id --all",
+    "deploy:content": "tcb fn deploy -e your-env-id content-service",
+    "deploy:user": "tcb fn deploy -e your-env-id user-service",
+    "deploy:social": "tcb fn deploy -e your-env-id social-service",
+    "deploy:game": "tcb fn deploy -e your-env-id game-service",
+    "deploy:utils": "tcb fn deploy -e your-env-id utils-service"
+  },
+  "dependencies": {
+    "wx-server-sdk": "2.6.3",
+    "crypto-js": "4.1.1",
+    "mysql2": "3.9.7"
+  },
+  "devDependencies": {
+    "eslint": "8.0.0",
+    "eslint-config-standard": "17.0.0",
+    "eslint-plugin-import": "2.25.0",
+    "eslint-plugin-node": "11.1.0",
+    "eslint-plugin-promise": "6.0.0"
+  },
+  "author": "Your Name <your.email@example.com>",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/insect-id-miniprogram"
+  },
+  "keywords": [
+    "wechat",
+    "miniprogram",
+    "cloud",
+    "functions",
+    "insect",
+    "identification"
+  ]
+}

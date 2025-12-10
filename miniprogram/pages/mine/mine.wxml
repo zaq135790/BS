@@ -1,22 +1,22 @@
 <view class="container">
-  <!-- 顶部用户信息区域 -->
+  <!-- 顶部用户信息区域：根据登录态显示不同状态 -->
   <view class="profile-card" style="background-image: url({{profileBackground}});">
     <view class="profile-overlay"></view>
     <view class="profile-content">
-      <view class="avatar-wrapper" bindtap="changeAvatar">
+      <view class="avatar-wrapper" bindtap="{{isLoggedIn ? 'changeAvatar' : 'login'}}">
         <image class="avatar" src="{{userInfo.avatar_url || '/images/default-avatar.png'}}" mode="aspectFill" />
-        <view class="avatar-edit-icon">✏️</view>
+        <view class="avatar-edit-icon">{{isLoggedIn ? '✏️' : '🔑'}}</view>
       </view>
-      <text class="nickname">{{userInfo.nickname || '虫虫探险者'}}</text>
-      <text class="role-badge">{{userInfo.user_type === 'parent' ? '家长' : '儿童'}}</text>
+      <text class="nickname">{{userInfo.nickname || '未登录'}}</text>
+      <text class="role-badge">{{isLoggedIn ? (userInfo.user_type === 'parent' ? '家长' : '儿童') : '访客'}}</text>
     </view>
-    <view class="card-action" bindtap="openBackgroundPicker">
-      <text>修改名片</text>
+    <view class="card-action" bindtap="{{isLoggedIn ? 'openBackgroundPicker' : 'login'}}">
+      <text>{{isLoggedIn ? '修改名片' : '点击登录'}}</text>
     </view>
   </view>
 
   <!-- 身份切换区域 -->
-  <view class="identity-switch-section">
+  <view class="identity-switch-section" wx:if="{{isLoggedIn}}">
     <view class="section-title">身份切换</view>
     <view class="identity-icons">
       <view class="identity-icon-wrapper {{userInfo.user_type === 'child' ? 'active' : ''}}" bindtap="switchIdentity" data-type="child">
@@ -38,7 +38,7 @@
   <view class="browse-history-section">
     <view class="section-header">
       <text class="section-title">浏览记录</text>
-      <text class="section-subtitle">{{userInfo.user_type === 'parent' ? '家长' : '儿童'}}身份下的浏览记录</text>
+      <text class="section-subtitle">{{isLoggedIn ? (userInfo.user_type === 'parent' ? '家长' : '儿童') : '访客'}}身份下的浏览记录</text>
     </view>
     <view class="browse-stats">
       <view class="browse-stat-item">
@@ -64,7 +64,7 @@
   <!-- 功能菜单，随身份切换加入淡入动画 -->
   <view class="menu-section {{roleSwitching ? 'menu-fade' : ''}}">
     <!-- 儿童身份功能 -->
-    <block wx:if="{{userInfo.user_type === 'child'}}">
+    <block wx:if="{{isLoggedIn && userInfo.user_type === 'child'}}">
       <view class="menu-item" bindtap="goToCategory">
         <text class="menu-icon">📖</text>
         <view class="menu-content">
@@ -92,7 +92,7 @@
     </block>
 
     <!-- 家长身份功能 -->
-    <block wx:else>
+    <block wx:elif="{{isLoggedIn}}">
       <view class="menu-item" bindtap="goToCommunity">
         <text class="menu-icon">💬</text>
         <view class="menu-content">
@@ -120,22 +120,44 @@
     </block>
 
     <!-- 通用功能 -->
-    <view class="menu-item" bindtap="goToGameRecords">
-      <text class="menu-icon">📊</text>
-      <view class="menu-content">
-        <text class="menu-text">游戏记录</text>
-        <text class="menu-desc">查看游戏成绩</text>
+    <block wx:if="{{isLoggedIn}}">
+      <view class="menu-item" bindtap="goToGameRecords">
+        <text class="menu-icon">📊</text>
+        <view class="menu-content">
+          <text class="menu-text">游戏记录</text>
+          <text class="menu-desc">查看游戏成绩</text>
+        </view>
+        <text class="menu-arrow">></text>
       </view>
-      <text class="menu-arrow">></text>
-    </view>
-    <view class="menu-item" bindtap="goToObservations">
-      <text class="menu-icon">📝</text>
-      <view class="menu-content">
-        <text class="menu-text">观察记录</text>
-        <text class="menu-desc">我的观察分享</text>
+      <view class="menu-item" bindtap="goToObservations">
+        <text class="menu-icon">📝</text>
+        <view class="menu-content">
+          <text class="menu-text">观察记录</text>
+          <text class="menu-desc">我的观察分享</text>
+        </view>
+        <text class="menu-arrow">></text>
       </view>
-      <text class="menu-arrow">></text>
-    </view>
+      <view class="menu-item danger" bindtap="logout">
+        <text class="menu-icon">🚪</text>
+        <view class="menu-content">
+          <text class="menu-text">退出登录</text>
+          <text class="menu-desc">切换账号或安全退出</text>
+        </view>
+        <text class="menu-arrow">></text>
+      </view>
+    </block>
+
+    <!-- 未登录提示 -->
+    <block wx:else>
+      <view class="menu-item" bindtap="login">
+        <text class="menu-icon">🔑</text>
+        <view class="menu-content">
+          <text class="menu-text">登录后解锁全部功能</text>
+          <text class="menu-desc">同步资料、记录与社区</text>
+        </view>
+        <text class="menu-arrow">></text>
+      </view>
+    </block>
   </view>
 
   <!-- 背景名片选择器 -->

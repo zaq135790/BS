@@ -1,0 +1,27 @@
+{
+  "name": "social-service",
+  "version": "1.0.0",
+  "description": "Social features and user interactions service",
+  "main": "index.js",
+  "private": true,
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "wx-server-sdk": "2.6.3"
+  },
+  "author": "Your Name <your.email@example.com>",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/insect-id-miniprogram"
+  },
+  "keywords": [
+    "wechat",
+    "miniprogram",
+    "cloud",
+    "functions",
+    "social",
+    "interaction"
+  ]
+}

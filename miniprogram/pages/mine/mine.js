@@ -5,6 +5,7 @@ Page({
       avatar_url: '',
       user_type: 'parent'
     },
+    isLoggedIn: false,
     browseHistory: [], // 浏览记录
     browseDays: 0, // 浏览天数
     profileBackground: '',
@@ -21,13 +22,38 @@ Page({
   },
 
   async onLoad() {
-    await this.loadUserInfo();
-    await this.initProfileBackground();
-    await this.loadBrowseHistory();
+    await this.refreshLoginState();
   },
 
   async onShow() {
-    // 每次显示页面时重新加载浏览记录
+    // 每次显示页面时重新同步登录态与浏览记录
+    await this.refreshLoginState(false);
+  },
+
+  // 刷新登录态并加载数据
+  async refreshLoginState(showLoading = true) {
+    const app = getApp();
+    const isLoggedIn = app.checkLoginStatus ? app.checkLoginStatus() : false;
+
+    this.setData({ isLoggedIn });
+
+    if (!isLoggedIn) {
+      // 未登录，重置为访客视图
+      this.setData({
+        userInfo: {
+          nickname: '未登录',
+          avatar_url: '',
+          user_type: 'child'
+        },
+        browseHistory: [],
+        browseDays: 0
+      });
+      return;
+    }
+
+    // 已登录，加载用户数据
+    await this.loadUserInfo(showLoading);
+    await this.initProfileBackground();
     await this.loadBrowseHistory();
   },
 
@@ -107,14 +133,35 @@ Page({
       });
       
       app.globalData.userInfo = res.userInfo;
-      app.loginCloud();
+      await app.loginCloud();
       
       // 重新加载用户信息
-      await this.loadUserInfo();
-      await this.initProfileBackground();
+      await this.refreshLoginState();
     } catch (error) {
       console.error('登录失败:', error);
     }
+  },
+
+  // 退出登录
+  logout() {
+    const app = getApp();
+    if (app.clearLoginState) {
+      app.clearLoginState();
+    }
+    this.setData({
+      isLoggedIn: false,
+      userInfo: {
+        nickname: '未登录',
+        avatar_url: '',
+        user_type: 'child'
+      },
+      browseHistory: [],
+      browseDays: 0
+    });
+    wx.showToast({
+      title: '已退出',
+      icon: 'none'
+    });
   },
 
   // 修改头像
@@ -126,14 +173,32 @@ Page({
       sourceType: ['album', 'camera'],
       success: async (res) => {
         const tempFilePath = res.tempFilePaths[0];
-        
-        // 这里可以上传到云存储，暂时直接使用本地路径
-        // 实际项目中应该上传到云存储获取URL
-        
-        // 更新用户信息
-        await that.updateUserInfo({
-          avatar_url: tempFilePath
-        });
+        try {
+          // 上传到云存储
+          const cloudPath = `avatars/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+          const uploadRes = await wx.cloud.uploadFile({
+            cloudPath,
+            filePath: tempFilePath
+          });
+
+          const avatarUrl = uploadRes.fileID || tempFilePath;
+
+          // 更新用户信息（本地 + 云端）
+          await that.updateUserInfo({
+            avatar_url: avatarUrl
+          });
+
+          wx.showToast({
+            title: '头像已更新',
+            icon: 'success'
+          });
+        } catch (e) {
+          console.error('上传头像失败:', e);
+          wx.showToast({
+            title: '上传失败，请重试',
+            icon: 'none'
+          });
+        }
       },
       fail: (err) => {
         console.error('选择图片失败:', err);
@@ -163,14 +228,21 @@ Page({
       // 尝试同步到云端（失败不影响本地使用）
       if (app.globalData.openid) {
         try {
-          const result = await app.callDatabase('saveUserInfo', {
-            openid: app.globalData.openid,
-            nickname: updatedUserInfo.nickname,
-            avatarUrl: updatedUserInfo.avatar_url,
-            userType: updatedUserInfo.user_type
+          const result = await wx.cloud.callFunction({
+            name: 'user-service',
+            data: {
+              action: 'updateUserInfo',
+              data: {
+                openid: app.globalData.openid,
+                userInfo: {
+                  nickname: updatedUserInfo.nickname,
+                  avatar_url: updatedUserInfo.avatar_url,
+                  user_type: updatedUserInfo.user_type
+                }
+              }
+            }
           });
-          // 云端同步成功或失败都不影响本地使用
-          if (!result.success) {
+          if (!result.result || !result.result.success) {
             console.log('云端同步失败，但本地已更新');
           }
         } catch (cloudError) {
