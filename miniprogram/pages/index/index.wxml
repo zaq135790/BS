@@ -17,6 +17,9 @@
     </view>
   </view>
 
+  <!-- AI 助手 -->
+  <ai-assistant></ai-assistant>
+
   <!-- 轮播图 -->
   <view class="swiper-container">
     <swiper indicator-dots="{{true}}" autoplay="{{true}}" interval="3000" duration="500" circular="{{true}}">

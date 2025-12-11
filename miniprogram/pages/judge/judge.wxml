@@ -60,17 +60,18 @@
         {{userAnswer === currentInsect.type ? '回答正确！' : '回答错误！'}}
       </view>
       <view class="correct-answer">正确答案: {{currentInsect.type}}</view>
-      <view class="response-time">用时: {{formatTime(responseTime)}}</view>
+      <view class="response-time">用时: {{formattedResponseTime}}</view>
     </view>
   </view>
 
   <!-- 游戏结束 -->
   <view wx:elif="{{gameEnded}}" class="end-screen">
-    <view class="title">游戏结束</view>
-    <view class="final-score">最终得分: {{score}}/{{totalQuestions}}</view>
-    <view class="accuracy">正确率: {{Math.round((score / totalQuestions) * 100)}}%</view>
+    <view class="end-title">游戏结束</view>
+    <view class="end-content">
+      <text class="congratulations">恭喜你！答对了{{score}}题，正确率{{accuracy}}%</text>
+    </view>
     <view class="buttons">
-      <button class="btn" bindtap="restartGame">再来一局</button>
+      <button class="btn primary" bindtap="restartGame">再来一局</button>
       <button class="btn secondary" bindtap="goBack">返回</button>
     </view>
   </view>

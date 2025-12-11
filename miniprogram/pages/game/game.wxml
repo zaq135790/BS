@@ -69,7 +69,7 @@
       <view wx:for="{{gameRecords[gameType]}}" wx:key="id" class="record-item" bindtap="viewGameRecord" data-id="{{item.id}}" data-game-type="{{item.game_type}}">
         <view class="record-info">
           <text class="record-game">{{item.game_type}}</text>
-          <text class="record-time">{{formatTime(item.created_at)}}</text>
+          <text class="record-time">{{item.formattedTime}}</text>
         </view>
         <view class="record-score">{{item.score}}分</view>
       </view>

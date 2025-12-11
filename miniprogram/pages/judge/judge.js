@@ -13,8 +13,13 @@ Page({
     showResult: false,
     correctAnswer: null,
     startTime: null,
+    questionStartTime: null,
     responseTime: 0,
-    loading: true
+    formattedResponseTime: '',
+    accuracy: 0,
+    loading: true,
+    // 保存所有题目的答题记录
+    answerRecords: []
   },
 
   async onLoad(options) {
@@ -89,59 +94,68 @@ Page({
     this.setData({
       gameStarted: true,
       startTime: Date.now(),
+      questionStartTime: Date.now(),
       currentIndex: 0,
       score: 0,
       answeredQuestions: 0,
       gameEnded: false,
-      currentInsect: this.data.insects[0]
+      currentInsect: this.data.insects[0],
+      answerRecords: [] // 重置答题记录
     });
   },
 
   // 选择答案
   selectAnswer(e) {
+    if (this.data.showResult) return; // 防止重复点击
+    
     const answer = e.currentTarget.dataset.answer;
-    const responseTime = Date.now() - this.data.startTime;
+    const responseTime = Date.now() - (this.data.questionStartTime || this.data.startTime);
+    const formattedResponseTime = this.formatTime(responseTime);
+    
+    // 检查答案是否正确
+    const isCorrect = answer === this.data.currentInsect.type;
+    
+    // 保存当前题目的答题记录到本地数组（不立即保存到数据库）
+    const answerRecords = [...this.data.answerRecords];
+    answerRecords.push({
+      insectId: this.data.currentInsect.id,
+      insectName: this.data.currentInsect.name,
+      userAnswer: answer,
+      correctAnswer: this.data.currentInsect.type,
+      isCorrect: isCorrect,
+      responseTime: responseTime,
+      questionIndex: this.data.currentIndex + 1
+    });
     
     this.setData({
       userAnswer: answer,
       responseTime: responseTime,
-      showResult: true
+      formattedResponseTime: formattedResponseTime,
+      showResult: true,
+      answerRecords: answerRecords
     });
-
-    // 检查答案是否正确
-    const isCorrect = answer === this.data.currentInsect.type;
     
     if (isCorrect) {
       this.setData({
         score: this.data.score + 1
       });
+      // 播放成功音效
+      wx.vibrateShort({
+        type: 'light'
+      });
+    } else {
+      // 播放错误音效
+      wx.vibrateShort({
+        type: 'medium'
+      });
     }
 
-    // 保存判断记录
-    this.saveJudgeRecord(answer, isCorrect, responseTime);
-
-    // 延迟显示下一题
+    // 延迟显示下一题（不再每答一题就保存到数据库）
     setTimeout(() => {
       this.nextQuestion();
     }, 2000);
   },
 
-  // 保存判断记录
-  async saveJudgeRecord(userAnswer, isCorrect, responseTime) {
-    const app = getApp();
-    
-    try {
-      await app.saveJudgeRecord({
-        userId: app.globalData.userId,
-        insectId: this.data.currentInsect.id,
-        userJudgment: userAnswer,
-        isCorrect: isCorrect,
-        responseTime: responseTime
-      });
-    } catch (error) {
-      console.error('保存判断记录失败:', error);
-    }
-  },
 
   // 下一题
   nextQuestion() {
@@ -158,7 +172,8 @@ Page({
         currentInsect: this.data.insects[nextIndex],
         userAnswer: null,
         showResult: false,
-        startTime: Date.now()
+        questionStartTime: Date.now(),
+        responseTime: 0
       });
     }
   },
@@ -166,41 +181,43 @@ Page({
   // 结束游戏
   async endGame() {
     const app = getApp();
+    const duration = Math.floor((Date.now() - this.data.startTime) / 1000);
+    const accuracy = Math.round((this.data.score / this.data.totalQuestions) * 100);
     
-    // 保存游戏记录
+    // 答完所有题目后，一次性保存游戏记录到数据库
     try {
-      await app.saveGameRecord({
+      const result = await app.saveGameRecord({
         userId: app.globalData.userId,
         gameType: '益害判官',
         score: this.data.score,
-        completionTime: Math.floor((Date.now() - this.data.startTime) / 1000),
-        difficultyLevel: '简单'
+        completionTime: duration,
+        difficultyLevel: null, // 益害判官游戏没有难度等级
+        completedPuzzles: this.data.answerRecords // 保存所有题目的详细答题记录
       });
+      
+      if (result.success) {
+        console.log('游戏记录保存成功:', result.data);
+      } else {
+        console.error('保存游戏记录失败:', result.message);
+      }
     } catch (error) {
       console.error('保存游戏记录失败:', error);
+      // 即使保存失败，也显示游戏结束界面
     }
 
+    // 直接显示游戏结束界面，不显示弹窗
     this.setData({
       gameEnded: true,
-      gameStarted: false
-    });
-
-    // 显示结果
-    wx.showModal({
-      title: '游戏结束',
-      content: `恭喜你！答对了 ${this.data.score} 题，正确率 ${Math.round((this.data.score / this.data.totalQuestions) * 100)}%`,
-      showCancel: false,
-      confirmText: '再来一局',
-      success: (res) => {
-        if (res.confirm) {
-          this.restartGame();
-        }
-      }
+      gameStarted: false,
+      accuracy: accuracy,
+      userAnswer: null,
+      showResult: false
     });
   },
 
   // 重新开始游戏
-  restartGame() {
+  async restartGame() {
+    // 重置所有游戏状态
     this.setData({
       gameStarted: false,
       gameEnded: false,
@@ -209,13 +226,75 @@ Page({
       answeredQuestions: 0,
       userAnswer: null,
       showResult: false,
-      currentInsect: this.data.insects[0]
+      startTime: null,
+      questionStartTime: null,
+      responseTime: 0,
+      formattedResponseTime: '',
+      accuracy: 0,
+      loading: true,
+      answerRecords: [] // 重置答题记录
     });
+
+    try {
+      // 重新加载昆虫数据（重新随机选择）
+      const app = getApp();
+      const result = await app.getInsects(null, 1, 50);
+      
+      if (result.success && result.data.length > 0) {
+        // 随机选择10个昆虫
+        const allInsects = result.data;
+        const shuffled = this.shuffleArray(allInsects);
+        const selectedInsects = shuffled.slice(0, this.data.totalQuestions);
+        
+        this.setData({
+          insects: selectedInsects,
+          currentInsect: selectedInsects[0],
+          loading: false
+        });
+      } else {
+        // 使用模拟数据
+        const mockInsects = this.getMockInsects();
+        const shuffled = this.shuffleArray(mockInsects);
+        const selectedInsects = shuffled.slice(0, this.data.totalQuestions);
+        
+        this.setData({
+          insects: selectedInsects,
+          currentInsect: selectedInsects[0],
+          loading: false
+        });
+      }
+    } catch (error) {
+      console.error('重新加载昆虫数据失败:', error);
+      // 使用模拟数据作为备用
+      const mockInsects = this.getMockInsects();
+      const shuffled = this.shuffleArray(mockInsects);
+      const selectedInsects = shuffled.slice(0, this.data.totalQuestions);
+      
+      this.setData({
+        insects: selectedInsects,
+        currentInsect: selectedInsects[0],
+        loading: false
+      });
+    }
   },
 
   // 返回游戏主页
   goBack() {
-    wx.navigateBack();
+    // 如果游戏正在进行中，提示用户确认
+    if (this.data.gameStarted && !this.data.gameEnded) {
+      wx.showModal({
+        title: '确认退出',
+        content: '游戏正在进行中，确定要退出吗？',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateBack();
+          }
+        }
+      });
+    } else {
+      // 游戏未开始或已结束，直接返回
+      wx.navigateBack();
+    }
   },
 
   // 格式化时间

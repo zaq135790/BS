@@ -191,36 +191,58 @@
   height: 100vh;
   color: white;
   text-align: center;
+  padding: 40rpx;
 }
 
-.final-score {
-  font-size: 40rpx;
+.end-title {
+  font-size: 48rpx;
   font-weight: bold;
-  margin-bottom: 20rpx;
+  margin-bottom: 40rpx;
+  color: #333;
 }
 
-.accuracy {
-  font-size: 28rpx;
+.end-content {
+  background: white;
+  border-radius: 20rpx;
+  padding: 60rpx 40rpx;
   margin-bottom: 60rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
+  min-width: 500rpx;
+}
+
+.congratulations {
+  font-size: 32rpx;
+  color: #333;
+  line-height: 1.6;
+  display: block;
 }
 
 .buttons {
   display: flex;
   gap: 20rpx;
+  width: 100%;
+  max-width: 600rpx;
+  justify-content: center;
 }
 
 .btn {
+  flex: 1;
+  border-radius: 50rpx;
+  padding: 24rpx 40rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  min-width: 200rpx;
+}
+
+.btn.primary {
   background: #4CAF50;
   color: white;
   border: none;
-  border-radius: 50rpx;
-  padding: 20rpx 40rpx;
-  font-size: 28rpx;
-  font-weight: bold;
 }
 
 .btn.secondary {
   background: transparent;
   border: 2rpx solid white;
+  color: white;
 }
 

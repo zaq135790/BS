@@ -8,6 +8,7 @@ App({
       wx.cloud.init({
         // 配置云环境ID，如果不配置会使用默认环境
         traceUser: true, // 追踪用户操作
+        timeout: 12000
       });
     }
 
@@ -363,7 +364,7 @@ App({
 
   // 获取拼图配置
   async getPuzzleConfigs(insectId, difficulty = null) {
-    return await this.callDatabase('getPuzzleConfigs', { insectId, difficulty });
+    return await this.callGameService('getPuzzleConfigs', { insectId, difficulty });
   }
 });
     

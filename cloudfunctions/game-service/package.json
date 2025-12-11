@@ -8,7 +8,8 @@
     "node": ">=14.0.0"
   },
   "dependencies": {
-    "wx-server-sdk": "2.6.3"
+    "wx-server-sdk": "2.6.3",
+    "mysql2": "3.9.7"
   },
   "author": "Your Name <your.email@example.com>",
   "license": "ISC",

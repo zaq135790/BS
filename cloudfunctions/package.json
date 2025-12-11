@@ -16,7 +16,8 @@
     "deploy:user": "tcb fn deploy -e your-env-id user-service",
     "deploy:social": "tcb fn deploy -e your-env-id social-service",
     "deploy:game": "tcb fn deploy -e your-env-id game-service",
-    "deploy:utils": "tcb fn deploy -e your-env-id utils-service"
+    "deploy:utils": "tcb fn deploy -e your-env-id utils-service",
+    "deploy:ai": "tcb fn deploy -e your-env-id ai-service"
   },
   "dependencies": {
     "wx-server-sdk": "2.6.3",

@@ -17,8 +17,7 @@ const dbConfig = {
   waitForConnections: true,
   connectionLimit: 5,
   timezone: 'Z',
-  connectTimeout: 1500, // 快速失败，避免云函数超时
-  acquireTimeout: 2000
+  connectTimeout: 1500 // 快速失败，避免云函数超时
 }
 
 const pool = mysql.createPool(dbConfig)

@@ -18,6 +18,12 @@ Page({
     await this.loadStats();
   },
 
+  async onShow() {
+    // 返回页面时刷新记录与统计，确保能看到最新成绩
+    await this.loadGameRecords();
+    await this.loadStats();
+  },
+
   // 加载游戏记录
   async loadGameRecords() {
     const app = getApp();
@@ -28,10 +34,19 @@ Page({
       // 获取拼图游戏记录
       const puzzleResult = await app.getGameRecords('虫虫拼图', 1, 10);
       
+      // 格式化时间
+      const formatRecords = (records) => {
+        return records.map(record => ({
+          ...record,
+          formattedTime: this.formatTime(record.created_at),
+          formattedDuration: this.formatDuration(record.completion_time || record.duration)
+        }));
+      };
+      
       this.setData({
         gameRecords: {
-          judge: judgeResult.success ? judgeResult.data : [],
-          puzzle: puzzleResult.success ? puzzleResult.data : []
+          judge: judgeResult.success ? formatRecords(judgeResult.data) : [],
+          puzzle: puzzleResult.success ? formatRecords(puzzleResult.data) : []
         },
         loading: false
       });

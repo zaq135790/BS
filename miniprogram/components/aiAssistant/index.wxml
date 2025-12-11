@@ -1,0 +1,76 @@
+<view
+  class="ai-fab"
+  style="top: {{fabTop}}px; left: {{fabLeft}}px;"
+  bindtap="openPanel"
+  bindtouchstart="onFabTouchStart"
+  bindtouchmove="onFabTouchMove"
+  bindtouchend="onFabTouchEnd"
+>
+  <image src="/images/tabbar/book.png" class="fab-icon" mode="aspectFit" />
+</view>
+
+<view wx:if="{{showPanel}}">
+  <view class="ai-mask" bindtap="closePanel"></view>
+  <view class="ai-card">
+    <view class="ai-header">
+      <view class="ai-title">
+        <text class="title">AI昆虫助手</text>
+        <text class="subtitle">深度解答虫虫知识，陪你探索自然</text>
+      </view>
+      <view class="status-group">
+        <view class="status-badge" wx:if="{{loading}}">
+          <text>思考中...</text>
+        </view>
+        <text class="close" bindtap="closePanel">×</text>
+      </view>
+    </view>
+
+    <view class="quick-list">
+      <view
+        class="quick-item"
+        wx:for="{{quickPrompts}}"
+        wx:key="index"
+        bindtap="usePrompt"
+        data-prompt="{{item}}"
+      >
+        <text>{{item}}</text>
+      </view>
+    </view>
+
+    <view class="chat-panel" wx:if="{{messages.length > 0}}">
+      <block wx:for="{{messages}}" wx:key="index">
+        <view class="bubble {{item.role}}">
+          <text>{{item.content}}</text>
+        </view>
+      </block>
+    </view>
+    <view class="chat-empty" wx:elif="{{!loading}}">
+      <text>向我提问昆虫、科普或自然探索问题吧~</text>
+    </view>
+
+    <view class="input-bar">
+      <input
+        class="input"
+        placeholder="例如：七星瓢虫为什么是益虫？"
+        placeholder-class="placeholder"
+        bindinput="onInput"
+        value="{{inputValue}}"
+        confirm-type="send"
+        bindconfirm="sendMessage"
+        cursor-spacing="16"
+        disabled="{{loading}}"
+      />
+      <button
+        class="send-btn"
+        type="primary"
+        size="mini"
+        bindtap="sendMessage"
+        loading="{{loading}}"
+        disabled="{{loading}}"
+      >
+        发送
+      </button>
+    </view>
+  </view>
+</view>
+
