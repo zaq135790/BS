@@ -109,6 +109,13 @@ exports.main = async (event, context) => {
         return await getArticleList(data)
       case 'getArticleDetail':
         return await getArticleDetail(data)
+      // 兼容 app.callDatabase 里的其他调用（如用户、视频等），返回占位，避免 FUNCTION_NOT_FOUND
+      case 'getUserInfo':
+        return { success: false, message: 'getUserInfo 未实现，请补充逻辑' }
+      case 'getVideos':
+        return { success: false, message: 'getVideos 未实现，请补充逻辑' }
+      case 'getVideoById':
+        return { success: false, message: 'getVideoById 未实现，请补充逻辑' }
       default:
         return { success: false, message: 'Invalid action' }
     }

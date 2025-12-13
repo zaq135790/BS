@@ -1,0 +1,32 @@
+<view class="container">
+  <!-- 分类标签 -->
+  <view class="category-tabs">
+    <view class="tab-item {{activeTab === 'beneficial' ? 'active' : ''}}" bindtap="switchTab" data-tab="beneficial">
+      益虫小帮手
+    </view>
+    <view class="tab-item {{activeTab === 'harmful' ? 'active' : ''}}" bindtap="switchTab" data-tab="harmful">
+      害虫小困扰
+    </view>
+  </view>
+
+  <!-- 昆虫列表：家长版科普知识库 -->
+  <view class="insect-list">
+    <block wx:for="{{currentInsects}}" wx:key="id">
+      <view class="insect-card parent-card" bindtap="goToDetail" data-index="{{index}}">
+        <image src="{{item.image}}" class="insect-image" mode="aspectFill" />
+        <view class="insect-info parent-info">
+          <text class="insect-name">{{item.name}}</text>
+          <view class="adult-text-row">
+            <text class="adult-label">怎么认：</text>
+            <text class="adult-content">{{item.identify}}</text>
+          </view>
+          <view class="adult-text-row">
+            <text class="adult-label">如何做：</text>
+            <text class="adult-content">{{item.guide}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>
+

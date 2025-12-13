@@ -46,7 +46,7 @@
   },
   "appid": "wxa6b3ccffcaf52517",
   "projectname": "quickstart-wx-cloud",
-  "libVersion": "3.10.3",
+  "libVersion": "2.20.1",
   "cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
   "condition": {
     "search": {

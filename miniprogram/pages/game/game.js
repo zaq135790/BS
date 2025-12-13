@@ -6,29 +6,48 @@ Page({
       puzzle: []
     },
     loading: true,
+    refreshing: false,
     stats: {
       totalGames: 0,
       correctRate: 0,
       bestScore: 0
-    }
+    },
+    timeUpdateTimer: null // 时间更新定时器
   },
 
   async onLoad() {
     await this.loadGameRecords();
     await this.loadStats();
+    this.startTimeUpdate();
   },
 
   async onShow() {
     // 返回页面时刷新记录与统计，确保能看到最新成绩
     await this.loadGameRecords();
     await this.loadStats();
+    this.startTimeUpdate();
+  },
+
+  onUnload() {
+    // 清除定时器
+    if (this.data.timeUpdateTimer) {
+      clearInterval(this.data.timeUpdateTimer);
+    }
   },
 
   // 加载游戏记录
   async loadGameRecords() {
     const app = getApp();
-    
+    this.setData({ loading: true });
     try {
+      const sortRecords = (records) => {
+        return [...records].sort((a, b) => {
+          const tA = new Date(a.created_at || a.createdAt || a.createdTime || 0).getTime();
+          const tB = new Date(b.created_at || b.createdAt || b.createdTime || 0).getTime();
+          return tB - tA;
+        });
+      };
+
       // 获取益害判官记录
       const judgeResult = await app.getGameRecords('益害判官', 1, 10);
       // 获取拼图游戏记录
@@ -39,14 +58,16 @@ Page({
         return records.map(record => ({
           ...record,
           formattedTime: this.formatTime(record.created_at),
-          formattedDuration: this.formatDuration(record.completion_time || record.duration)
+          formattedDuration: this.formatDuration(record.completion_time || record.duration),
+          created_at: record.created_at, // 保留原始时间戳用于后续更新
+          reportAvailable: !!record.completed_puzzles // 益害判官的报告标记
         }));
       };
       
       this.setData({
         gameRecords: {
-          judge: judgeResult.success ? formatRecords(judgeResult.data) : [],
-          puzzle: puzzleResult.success ? formatRecords(puzzleResult.data) : []
+          judge: judgeResult.success ? sortRecords(formatRecords(judgeResult.data)) : [],
+          puzzle: puzzleResult.success ? sortRecords(formatRecords(puzzleResult.data)) : []
         },
         loading: false
       });
@@ -117,17 +138,80 @@ Page({
   viewGameRecord(e) {
     const recordId = e.currentTarget.dataset.id;
     const gameType = e.currentTarget.dataset.gameType;
+    const record = this.data.gameRecords[this.data.gameType].find(r => r.id == recordId);
     
-    wx.navigateTo({
-      url: `/pages/gameRecord/gameRecord?id=${recordId}&type=${gameType}`
-    });
+    // 如果是益害判官游戏，跳转到judge页面显示报告
+    if (gameType === '益害判官') {
+      wx.navigateTo({
+        url: `/pages/judge/judge?fromRecord=true&recordId=${recordId}`
+      });
+    } else {
+      // 其他游戏类型，跳转到详情页
+      wx.navigateTo({
+        url: `/pages/gameRecord/gameRecord?id=${recordId}&type=${gameType}`
+      });
+    }
   },
 
   // 下拉刷新
   async onPullDownRefresh() {
+    wx.showNavigationBarLoading();
+    this.setData({ refreshing: true, loading: true });
     await this.loadGameRecords();
     await this.loadStats();
+    this.setData({ refreshing: false });
+    wx.hideNavigationBarLoading();
     wx.stopPullDownRefresh();
+  },
+
+  // 手动刷新
+  async manualRefresh() {
+    if (this.data.refreshing) return;
+    this.setData({ refreshing: true });
+    await this.loadGameRecords();
+    await this.loadStats();
+    this.setData({ refreshing: false });
+    wx.showToast({
+      title: '刷新成功',
+      icon: 'success',
+      duration: 1500
+    });
+  },
+
+  // 开始时间更新定时器（每分钟更新一次）
+  startTimeUpdate() {
+    // 清除旧的定时器
+    if (this.data.timeUpdateTimer) {
+      clearInterval(this.data.timeUpdateTimer);
+    }
+    
+    // 设置新的定时器，每分钟更新一次
+    const timer = setInterval(() => {
+      this.updateTimeDisplay();
+    }, 60000); // 60000毫秒 = 1分钟
+    
+    this.setData({
+      timeUpdateTimer: timer
+    });
+  },
+
+  // 更新时间显示
+  updateTimeDisplay() {
+    const formatRecords = (records) => {
+      return records.map(record => ({
+        ...record,
+        formattedTime: this.formatTime(record.created_at),
+        formattedDuration: this.formatDuration(record.completion_time || record.duration)
+      }));
+    };
+    
+    // 更新当前显示的游戏类型的记录时间
+    const currentRecords = this.data.gameRecords[this.data.gameType];
+    const updatedRecords = formatRecords(currentRecords);
+    
+    this.setData({
+      [`gameRecords.${this.data.gameType}`]: updatedRecords
+    });
   },
 
   // 格式化时间

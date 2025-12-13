@@ -6,9 +6,6 @@ Page({
     allInsects: [],  // 所有12种昆虫
     featuredInsects: [],  // 当前显示的3种昆虫
     displayedIndices: [],  // 已显示的索引
-    searchKeyword: '',
-    searchResults: [],
-    showSearchResults: false,
     userRole: 'child'  // 当前用户身份
   },
 
@@ -38,29 +35,31 @@ Page({
 
   // 初始化数据
   initData() {
+    const defaultImg = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/images/bj3.png';
     // 合并所有昆虫数据
     const allInsects = [
       ...beneficialInsects.map((item, index) => ({
         id: `b_${index}`,
         name: item.name,
-        image: item.cartoonImg,
+        image: item.cartoonImg || defaultImg,
         type: '益虫',
         childDesc: item.childDesc
       })),
       ...harmfulInsects.map((item, index) => ({
         id: `h_${index}`,
         name: item.name,
-        image: item.cartoonImg,
+        image: item.cartoonImg || defaultImg,
         type: '害虫',
         childDesc: item.childDesc
       }))
     ];
 
-    // 生成轮播图数据（使用bj3图片，统一使用同一张图片）
+    // 生成轮播图数据
+    const cloudBase = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image';
     const swiperList = [
-      { id: 1, image: '/images/bj3(1).png', title: '探索昆虫世界' },
-      { id: 2, image: '/images/bj3(1).png', title: '发现自然奥秘' },
-      { id: 3, image: '/images/bj3(1).png', title: '学习昆虫知识' }
+      { id: 1, image: `${cloudBase}/lbt1.jpg`, title: '探索昆虫世界' },
+      { id: 2, image: `${cloudBase}/lbt2.jpg`, title: '发现自然奥秘' },
+      { id: 3, image: `${cloudBase}/lbt3.jpg`, title: '学习昆虫知识' }
     ];
 
     // 初始化精选昆虫（前3个）
@@ -75,46 +74,10 @@ Page({
     });
   },
 
-  // 搜索功能
-  onSearchInput(e) {
-    const keyword = e.detail.value.trim();
-    this.setData({
-      searchKeyword: keyword,
-      showSearchResults: keyword.length > 0
-    });
-
-    if (keyword.length > 0) {
-      this.performSearch(keyword);
-    } else {
-      this.setData({
-        searchResults: []
-      });
-    }
-  },
-
-  // 执行搜索
-  performSearch(keyword) {
-    const results = this.data.allInsects.filter(insect => 
-      insect.name.includes(keyword)
-    );
-    this.setData({
-      searchResults: results
-    });
-  },
-
-  // 选择搜索结果
-  selectSearchResult(e) {
-    const index = e.currentTarget.dataset.index;
-    const insect = this.data.searchResults[index];
-    // 跳转到详情页
+  // 跳转到搜索页面
+  goToSearch() {
     wx.navigateTo({
-      url: `/pages/detail/detail?name=${insect.name}&id=${insect.id}`
-    });
-    // 清空搜索
-    this.setData({
-      searchKeyword: '',
-      showSearchResults: false,
-      searchResults: []
+      url: '/pages/search/search'
     });
   },
 
@@ -125,10 +88,15 @@ Page({
 
   // 换一换功能
   refreshFeaturedInsects() {
-    const { allInsects, displayedIndices } = this.data;
+    const { allInsects, displayedIndices, featuredInsects } = this.data;
     const totalCount = allInsects.length;
     
-    // 如果已经显示过所有昆虫，重新开始
+    // 获取当前显示的3个昆虫的索引
+    const currentIndices = featuredInsects.map(item => {
+      return allInsects.findIndex(insect => insect.id === item.id);
+    }).filter(idx => idx >= 0);
+    
+    // 如果已经显示过所有昆虫，重新开始（可以随机到第一次的）
     if (displayedIndices.length >= totalCount) {
       const newIndices = this.getRandomIndices(totalCount, 3, []);
       const newFeatured = newIndices.map(idx => allInsects[idx]);
@@ -136,10 +104,15 @@ Page({
         featuredInsects: newFeatured,
         displayedIndices: newIndices
       });
+      wx.showToast({
+        title: '已刷新',
+        icon: 'success',
+        duration: 1000
+      });
       return;
     }
 
-    // 获取未显示的索引
+    // 获取未显示的索引（排除当前显示的3个）
     const availableIndices = [];
     for (let i = 0; i < totalCount; i++) {
       if (!displayedIndices.includes(i)) {
@@ -147,13 +120,29 @@ Page({
       }
     }
 
-    // 随机选择3个
-    const newIndices = this.getRandomIndices(availableIndices.length, 3, displayedIndices);
-    const actualIndices = newIndices.map(idx => availableIndices[idx]);
-    const newFeatured = actualIndices.map(idx => allInsects[idx]);
+    // 如果可用的索引不足3个，说明已经显示过大部分，可以重新开始
+    if (availableIndices.length < 3) {
+      const newIndices = this.getRandomIndices(totalCount, 3, []);
+      const newFeatured = newIndices.map(idx => allInsects[idx]);
+      this.setData({
+        featuredInsects: newFeatured,
+        displayedIndices: newIndices
+      });
+      wx.showToast({
+        title: '已刷新',
+        icon: 'success',
+        duration: 1000
+      });
+      return;
+    }
+
+    // 从可用索引中随机选择3个
+    const shuffled = [...availableIndices].sort(() => Math.random() - 0.5);
+    const selectedIndices = shuffled.slice(0, 3);
+    const newFeatured = selectedIndices.map(idx => allInsects[idx]);
 
     // 更新已显示索引（合并，避免重复）
-    const updatedDisplayed = [...new Set([...displayedIndices, ...actualIndices])];
+    const updatedDisplayed = [...new Set([...displayedIndices, ...selectedIndices])];
 
     this.setData({
       featuredInsects: newFeatured,
@@ -177,11 +166,12 @@ Page({
       }
     }
     
-    // 随机选择
-    for (let i = 0; i < Math.min(needCount, available.length); i++) {
-      const randomIndex = Math.floor(Math.random() * available.length);
-      indices.push(available[randomIndex]);
-      available.splice(randomIndex, 1);
+    // 随机打乱
+    const shuffled = [...available].sort(() => Math.random() - 0.5);
+    
+    // 选择前needCount个
+    for (let i = 0; i < Math.min(needCount, shuffled.length); i++) {
+      indices.push(shuffled[i]);
     }
     
     return indices;
@@ -229,8 +219,19 @@ Page({
       this.showChildReminder('knowledge');
       return;
     }
-    wx.switchTab({
-      url: '/pages/category/category'
+    wx.navigateTo({
+      url: '/pages/knowledge/knowledge'
+    });
+  },
+
+  // 昆虫识别（家长版功能）
+  goToInsectRecognition() {
+    if (this.data.userRole === 'child') {
+      this.showChildReminder('recognition');
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/recognition/recognition'
     });
   },
 
@@ -261,5 +262,6 @@ Page({
     wx.navigateTo({
       url: `/pages/detail/detail?name=${insect.name}&id=${insect.id}`
     });
-  }
+  },
+
 });

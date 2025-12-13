@@ -1,59 +1,23 @@
 <!--pages/posts/posts.wxml-->
 <view class="container">
+  <!-- 刷新提示 -->
+  <view wx:if="{{refreshing}}" class="refresh-indicator">
+    <text class="refresh-icon">⟳</text>
+    <text class="refresh-text">正在刷新...</text>
+  </view>
+
   <!-- 加载中 -->
-  <view wx:if="{{loading}}" class="loading">
+  <view wx:if="{{loading && !refreshing}}" class="loading">
     <text>加载中...</text>
   </view>
 
   <!-- 帖子列表 -->
   <view wx:else class="posts-container">
-    <!-- 发布区域 -->
-    <view class="publish-section">
-      <view class="publish-header">
-        <text class="section-title">分享你的发现</text>
-      </view>
-      
-      <!-- 图片选择 -->
-      <view class="image-section">
-        <view wx:if="{{!imageUrl}}" class="image-placeholder" bindtap="chooseImage">
-          <text class="placeholder-icon">📷</text>
-          <text class="placeholder-text">点击添加照片</text>
-        </view>
-        <view wx:else class="image-preview">
-          <image class="preview-image" src="{{imageUrl}}" mode="aspectFill"></image>
-          <view class="image-actions">
-            <button class="action-btn" bindtap="chooseImage">重新选择</button>
-          </view>
-        </view>
-      </view>
-
-      <!-- 内容输入 -->
-      <view class="content-section">
-        <textarea 
-          class="content-input" 
-          placeholder="分享你的观察发现..." 
-          value="{{content}}"
-          bindinput="onContentChange"
-          maxlength="500"
-        ></textarea>
-        <text class="char-count">{{content.length}}/500</text>
-      </view>
-
-      <!-- 发布按钮 -->
-      <button 
-        class="publish-btn {{submitting ? 'loading' : ''}}" 
-        bindtap="submitPost"
-        disabled="{{submitting}}"
-      >
-        {{submitting ? '发布中...' : '发布'}}
-      </button>
-    </view>
-
     <!-- 帖子列表 -->
     <view class="posts-list">
-      <view wx:for="{{posts}}" wx:key="id" class="post-item">
+      <view wx:for="{{posts}}" wx:key="id" class="post-item" bindtap="goToPostDetail" data-id="{{item.id}}">
         <view class="post-header">
-          <image class="user-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+          <image class="user-avatar" src="{{item.avatar}}" mode="aspectFill" binderror="onImageError" data-type="avatar"></image>
           <view class="user-info">
             <text class="user-name">{{item.nickname}}</text>
             <text class="post-time">{{item.createTime}}</text>
@@ -69,10 +33,18 @@
         </view>
 
         <view wx:if="{{item.imageUrl}}" class="post-image">
-          <image class="content-image" src="{{item.imageUrl}}" mode="aspectFill"></image>
+          <image 
+            class="content-image" 
+            src="{{item.imageUrl}}" 
+            mode="aspectFill" 
+            binderror="onImageError" 
+            data-type="post"
+            bindtap="previewImage"
+            data-url="{{item.imageUrl}}"
+          ></image>
         </view>
 
-        <view class="post-actions">
+        <view class="post-actions" catchtap="stopPropagation">
           <button 
             class="action-btn {{item.liked ? 'liked' : ''}}" 
             bindtap="likePost" 
@@ -91,6 +63,83 @@
     </view>
     <view wx:else class="no-more">
       <text>没有更多了</text>
+    </view>
+  </view>
+
+  <!-- 悬浮发布按钮 -->
+  <view class="fab-button" bindtap="openPublishModal">
+    <text class="fab-icon">+</text>
+  </view>
+
+  <!-- 发布弹窗 -->
+  <view wx:if="{{showPublishModal}}" class="publish-modal-mask" bindtap="closePublishModal">
+    <view class="publish-modal" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">分享你的发现</text>
+        <text class="modal-close" bindtap="closePublishModal">×</text>
+      </view>
+
+      <view class="modal-content">
+        <!-- 图片选择 -->
+        <view class="image-section">
+          <view wx:if="{{!imageUrl}}" class="image-placeholder" bindtap="chooseImage">
+            <text class="placeholder-icon">📷</text>
+            <text class="placeholder-text">点击添加照片</text>
+          </view>
+          <view wx:else class="image-preview">
+            <image class="preview-image" src="{{imageUrl}}" mode="aspectFill"></image>
+            <view class="image-actions">
+              <button class="action-btn" bindtap="chooseImage">重新选择</button>
+            </view>
+          </view>
+        </view>
+
+        <!-- 地点输入 -->
+        <view class="input-section">
+          <text class="input-label">地点</text>
+          <input 
+            class="form-input" 
+            placeholder="请输入发现地点" 
+            value="{{location}}"
+            bindinput="onLocationChange"
+            maxlength="50"
+          />
+        </view>
+
+        <!-- 昆虫输入 -->
+        <view class="input-section">
+          <text class="input-label">昆虫</text>
+          <input 
+            class="form-input" 
+            placeholder="请输入昆虫名称" 
+            value="{{insectName}}"
+            bindinput="onInsectNameChange"
+            maxlength="20"
+          />
+        </view>
+
+        <!-- 内容输入 -->
+        <view class="content-section">
+          <text class="input-label">分享你的观察发现</text>
+          <textarea 
+            class="content-input" 
+            placeholder="分享你的观察发现..." 
+            value="{{content}}"
+            bindinput="onContentChange"
+            maxlength="500"
+          ></textarea>
+          <text class="char-count">{{content.length}}/500</text>
+        </view>
+
+        <!-- 发布按钮 -->
+        <button 
+          class="publish-btn {{submitting ? 'loading' : ''}}" 
+          bindtap="submitPost"
+          disabled="{{submitting}}"
+        >
+          {{submitting ? '发布中...' : '发布'}}
+        </button>
+      </view>
     </view>
   </view>
 </view>

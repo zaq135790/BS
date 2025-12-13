@@ -1,18 +1,20 @@
 <view class="container">
+  <!-- 背景图片 -->
+  <image class="background-image" src="cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj1.jpg" mode="aspectFill"></image>
   <!-- 游戏标题 -->
   <view class="page-title">互动游戏</view>
 
   <!-- 两个主要游戏 -->
   <view class="game-grid">
     <view class="game-card" bindtap="startJudgeGame">
-      <image src="/images/icons/judge.png" class="game-icon" />
+      <image src="cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/game11.jpg" class="game-icon" />
       <view class="game-info">
         <text class="game-name">益害小判官</text>
         <text class="game-desc">判断昆虫是益虫还是害虫</text>
       </view>
     </view>
     <view class="game-card" bindtap="startPuzzleGame">
-      <image src="/images/icons/puzzle.png" class="game-icon" />
+      <image src="cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/game22.jpg" class="game-icon" />
       <view class="game-info">
         <text class="game-name">虫虫拼图</text>
         <text class="game-desc">完成昆虫图片拼图挑战</text>
@@ -43,6 +45,9 @@
   <view class="records-section">
     <view class="records-title">
       <text>游戏记录</text>
+      <view class="refresh-icon {{refreshing ? 'rotating' : ''}}" bindtap="manualRefresh">
+        <text class="refresh-icon-text">🔄</text>
+      </view>
     </view>
     
     <!-- 游戏类型切换 -->

@@ -18,13 +18,46 @@ Page({
     score: 0,
     loading: true,
     showHint: false,
-    gridSize: 2 // 默认简单难度为2*2
+    gridSize: 2, // 默认简单难度为2*2
+    startBackground: '' // 开始界面背景图片URL
   },
 
   async onLoad(options) {
     const insectId = options.insectId;
     this.setData({ insectId });
+    await this.loadStartBackground();
     await this.loadPuzzleConfig();
+  },
+
+  // 加载开始界面背景图片
+  async loadStartBackground() {
+    const cloudUrl = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/game2.jpg';
+    console.log('开始加载拼图游戏背景图片:', cloudUrl);
+    try {
+      const res = await wx.cloud.getTempFileURL({
+        fileList: [cloudUrl]
+      });
+      console.log('拼图游戏背景图片转换结果:', res);
+      if (res.fileList && res.fileList.length > 0 && res.fileList[0].tempFileURL) {
+        const tempUrl = res.fileList[0].tempFileURL;
+        console.log('拼图游戏背景图片转换后的URL:', tempUrl);
+        this.setData({
+          startBackground: tempUrl
+        });
+      } else {
+        console.warn('拼图游戏背景图片转换失败，使用原始URL');
+        // 如果转换失败，使用原始URL
+        this.setData({
+          startBackground: cloudUrl
+        });
+      }
+    } catch (error) {
+      console.error('获取拼图游戏背景图片临时URL失败:', error);
+      // 如果转换失败，使用原始URL
+      this.setData({
+        startBackground: cloudUrl
+      });
+    }
   },
 
   onUnload() {

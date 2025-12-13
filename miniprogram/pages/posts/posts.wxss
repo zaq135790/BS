@@ -1,6 +1,7 @@
 /* pages/posts/posts.wxss */
 .container {
   padding: 20rpx;
+  padding-top: 0;
   min-height: 100vh;
   background: #f5f5f5;
 }
@@ -139,6 +140,13 @@
   padding: 30rpx;
   border-radius: 15rpx;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.post-item:active {
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.15);
 }
 
 .post-header {
@@ -249,4 +257,192 @@
   color: #999;
 }
 
+/* 刷新指示器 */
+.refresh-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #4CAF50 0%, #8bc34a 100%);
+  color: white;
+  padding: 25rpx;
+  padding-top: calc(25rpx + env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15rpx;
+  z-index: 2000;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.refresh-icon {
+  font-size: 32rpx;
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.refresh-text {
+  font-size: 28rpx;
+}
+
+/* 悬浮发布按钮 */
+.fab-button {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4CAF50 0%, #8bc34a 100%);
+  box-shadow: 0 8rpx 20rpx rgba(76, 175, 80, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: transform 0.2s;
+}
+
+.fab-button:active {
+  transform: scale(0.9);
+}
+
+.fab-icon {
+  font-size: 60rpx;
+  color: white;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* 发布弹窗 */
+.publish-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.publish-modal {
+  width: 100%;
+  max-height: 90vh;
+  background: white;
+  border-radius: 30rpx 30rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.modal-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 50rpx;
+  color: #999;
+  line-height: 1;
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30rpx;
+}
+
+.modal-content .image-section {
+  margin-bottom: 30rpx;
+}
+
+.modal-content .image-placeholder {
+  height: 300rpx;
+}
+
+.modal-content .preview-image {
+  height: 400rpx;
+}
+
+.input-section {
+  margin-bottom: 30rpx;
+}
+
+.input-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 20rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 10rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+}
+
+.form-input:focus {
+  border-color: #4CAF50;
+  background: white;
+}
+
+.modal-content .content-section {
+  margin-bottom: 30rpx;
+}
+
+.modal-content .content-input {
+  height: 200rpx;
+}
+
+.modal-content .publish-btn {
+  margin-top: 20rpx;
+}
 

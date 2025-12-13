@@ -6,7 +6,7 @@
   bindtouchmove="onFabTouchMove"
   bindtouchend="onFabTouchEnd"
 >
-  <image src="/images/tabbar/book.png" class="fab-icon" mode="aspectFit" />
+  <image src="/images/tabbar/Ai.png" class="fab-icon" mode="aspectFit" />
 </view>
 
 <view wx:if="{{showPanel}}">

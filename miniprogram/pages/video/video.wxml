@@ -8,19 +8,39 @@
   <!-- 视频播放器 -->
   <view wx:else class="video-container">
     <!-- 视频播放器 -->
-    <video 
-      class="video-player {{fullscreen ? 'fullscreen' : ''}}"
-      src="{{videoInfo.video_url}}"
-      poster="{{videoInfo.thumbnail_url}}"
-      bindplay="onVideoPlay"
-      bindpause="onVideoPause"
-      bindtimeupdate="onVideoTimeUpdate"
-      bindended="onVideoEnded"
-      controls
-      show-center-play-btn
-      enable-progress-gesture
-      object-fit="contain"
-    ></video>
+    <view class="video-wrapper">
+      <video 
+        id="video-player"
+        class="video-player {{fullscreen ? 'fullscreen' : ''}}"
+        src="{{videoInfo.video_url}}"
+        poster="{{videoInfo.thumbnail_url}}"
+        bindplay="onVideoPlay"
+        bindpause="onVideoPause"
+        bindtimeupdate="onVideoTimeUpdate"
+        bindended="onVideoEnded"
+        bindfullscreenchange="onFullscreenChange"
+        bindtap="onVideoOverlayTap"
+        vslide-gesture-in-fullscreen="{{true}}"
+        controls
+        show-center-play-btn
+        enable-progress-gesture
+        show-fullscreen-btn="{{true}}"
+        enable-play-gesture="{{true}}"
+        object-fit="contain"
+      ></video>
+      <!-- 浮动全屏按钮（cover-view 才能盖在原生 video 上） -->
+      <cover-view class="fs-fab" bindtap="toggleFullscreen">
+        <text>{{ fullscreen ? '退出全屏' : '沉浸全屏' }}</text>
+      </cover-view>
+      <!-- 暂停/播放提示 -->
+      <view wx:if="{{showPauseIcon}}" class="pause-icon">
+        <text>{{ playing ? '▶' : '⏸' }}</text>
+      </view>
+      <!-- 全屏时左上角返回 -->
+      <view wx:if="{{fullscreen}}" class="fullscreen-back" catchtap="onBackTap">
+        <text>←</text>
+      </view>
+    </view>
 
     <!-- 视频信息 -->
     <view class="video-info">
@@ -35,31 +55,24 @@
 
     <!-- 控制按钮 -->
     <view class="video-controls">
-      <button class="control-btn" bindtap="toggleFullscreen">
-        {{fullscreen ? '退出全屏' : '全屏播放'}}
+      <button class="control-btn single" bindtap="toggleFullscreen">
+        {{fullscreen ? '退出全屏' : '沉浸全屏'}}
       </button>
-      <button class="control-btn" open-type="share">分享视频</button>
     </view>
 
     <!-- 相关推荐 -->
     <view class="recommendations">
       <view class="section-title">相关视频</view>
       <view class="video-list">
-        <!-- 这里可以显示相关视频列表 -->
-        <view class="recommend-item">
-          <image class="recommend-thumb" src="/images/video_thumb1.jpg" mode="aspectFill"></image>
-          <view class="recommend-info">
-            <text class="recommend-title">七星瓢虫的一天</text>
-            <text class="recommend-duration">2:30</text>
+        <block wx:for="{{relatedVideos}}" wx:key="id">
+          <view class="recommend-item" data-id="{{item.id}}" bindtap="onRecommendTap">
+            <image class="recommend-thumb" src="{{item.thumbnail_url}}" mode="aspectFill"></image>
+            <view class="recommend-info">
+              <text class="recommend-title">{{item.title}}</text>
+              <text class="recommend-duration">{{formatTime(item.duration)}}</text>
+            </view>
           </view>
-        </view>
-        <view class="recommend-item">
-          <image class="recommend-thumb" src="/images/video_thumb2.jpg" mode="aspectFill"></image>
-          <view class="recommend-info">
-            <text class="recommend-title">螳螂的捕食技巧</text>
-            <text class="recommend-duration">4:12</text>
-          </view>
-        </view>
+        </block>
       </view>
     </view>
   </view>

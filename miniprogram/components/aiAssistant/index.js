@@ -117,7 +117,8 @@ Component({
       try {
         const res = await wx.cloud.callFunction({
           name: 'ai-service',
-          timeout: 12000,
+          // 拉长前端调用超时，避免 8s 误判
+          timeout: 20000,
           data: {
             action: 'chat',
             data: {

@@ -1,0 +1,85 @@
+<!--pages/search/search.wxml-->
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-header">
+    <view class="search-box">
+      <view class="search-input">
+        <icon type="search" size="18" color="#999"></icon>
+        <input 
+          placeholder="搜索昆虫名称..." 
+          placeholder-class="placeholder-style" 
+          value="{{searchKeyword}}" 
+          bindinput="onSearchInput"
+          focus="{{true}}"
+        />
+      </view>
+    </view>
+    <view class="cancel-btn" bindtap="goBack">取消</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading">
+    <text>搜索中...</text>
+  </view>
+
+  <!-- 搜索历史 -->
+  <view wx:if="{{showHistory && searchHistory.length > 0}}" class="history-section">
+    <view class="section-header">
+      <text class="section-title">最近搜索</text>
+      <text class="clear-btn" bindtap="clearSearchHistory">清除</text>
+    </view>
+    <view class="history-list">
+      <view 
+        wx:for="{{searchHistory}}" 
+        wx:key="index" 
+        class="history-item"
+        bindtap="onHistoryItemTap"
+        data-keyword="{{item}}"
+      >
+        <icon type="search" size="16" color="#999"></icon>
+        <text class="history-text">{{item}}</text>
+        <view class="delete-btn" catchtap="deleteHistoryItem" data-keyword="{{item}}">
+          <text>✕</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view wx:if="{{!showHistory && searchKeyword.length > 0}}" class="results-section">
+    <view class="result-header">
+      <text class="result-count">找到 {{searchResults.length}} 个结果</text>
+    </view>
+    
+    <view wx:if="{{searchResults.length > 0}}" class="result-list">
+      <view 
+        wx:for="{{searchResults}}" 
+        wx:key="id" 
+        class="result-item"
+        bindtap="selectSearchResult"
+        data-index="{{index}}"
+      >
+        <image class="result-image" src="{{item.image}}" mode="aspectFill"></image>
+        <view class="result-info">
+          <text class="result-name">{{item.name}}</text>
+          <text class="result-type">{{item.type}}</text>
+        </view>
+        <icon type="arrowright" size="16" color="#ccc"></icon>
+      </view>
+    </view>
+    
+    <view wx:else class="empty-result">
+      <text class="empty-icon">🔍</text>
+      <text class="empty-text">没有找到相关昆虫</text>
+      <text class="empty-hint">试试其他关键词吧</text>
+    </view>
+  </view>
+
+  <!-- 空状态（无历史记录且无搜索） -->
+  <view wx:if="{{showHistory && searchHistory.length === 0}}" class="empty-state">
+    <text class="empty-icon">🔍</text>
+    <text class="empty-text">暂无搜索记录</text>
+    <text class="empty-hint">开始搜索昆虫吧</text>
+  </view>
+</view>
+

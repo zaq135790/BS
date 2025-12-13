@@ -262,12 +262,12 @@ App({
     isRefreshingToken: false, // 数据库中的用户ID
   },
 
-  // 数据库操作工具函数
+  // 数据库操作工具函数（改用 content-service）
   async callDatabase(action, data = {}) {
     try {
       const result = await wx.cloud.callFunction({
-        name: 'database',
-        data: { action, ...data }
+        name: 'content-service',
+        data: { action, data }
       });
       return result.result;
     } catch (error) {

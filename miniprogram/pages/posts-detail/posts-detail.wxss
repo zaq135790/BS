@@ -1,0 +1,332 @@
+/* pages/posts-detail/posts-detail.wxss */
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 200rpx;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 32rpx;
+  color: #666;
+}
+
+.post-detail {
+  padding: 20rpx;
+}
+
+.post-card {
+  background: white;
+  padding: 30rpx;
+  border-radius: 15rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.user-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  margin-right: 20rpx;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5rpx;
+}
+
+.post-time {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.post-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.location {
+  font-size: 20rpx;
+  color: #666;
+  margin-bottom: 5rpx;
+}
+
+.insect-name {
+  font-size: 20rpx;
+  color: #4CAF50;
+  background: #e8f5e8;
+  padding: 3rpx 10rpx;
+  border-radius: 10rpx;
+}
+
+.post-content {
+  margin-bottom: 20rpx;
+}
+
+.content-text {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.8;
+}
+
+.post-image {
+  margin-bottom: 20rpx;
+}
+
+.content-image {
+  width: 100%;
+  max-height: 600rpx;
+  border-radius: 10rpx;
+}
+
+.post-stats {
+  display: flex;
+  align-items: center;
+  gap: 30rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.stat-icon {
+  font-size: 28rpx;
+}
+
+.stat-text {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: transparent;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 25rpx;
+  padding: 10rpx 20rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.like-btn.liked {
+  border-color: #f44336;
+  color: #f44336;
+}
+
+.like-icon {
+  font-size: 24rpx;
+}
+
+.like-text {
+  font-size: 22rpx;
+}
+
+/* 评论区域 */
+.comments-section {
+  background: white;
+  padding: 30rpx;
+  border-radius: 15rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.no-comments {
+  text-align: center;
+  padding: 60rpx 0;
+  color: #999;
+  font-size: 26rpx;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.comment-item {
+  display: flex;
+  gap: 15rpx;
+}
+
+.comment-avatar {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  margin-bottom: 8rpx;
+}
+
+.comment-name {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.comment-time {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.comment-text {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* 评论输入框 */
+.comment-input-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 20rpx;
+  border-top: 1rpx solid #e0e0e0;
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  margin-bottom: 15rpx;
+}
+
+.comment-input {
+  flex: 1;
+  height: 70rpx;
+  padding: 0 20rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 35rpx;
+  font-size: 26rpx;
+  background: #f5f5f5;
+}
+
+.comment-input:focus {
+  border-color: #4CAF50;
+  background: white;
+}
+
+.emoji-btn {
+  width: 70rpx;
+  height: 70rpx;
+  background: #f5f5f5;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 50%;
+  font-size: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.submit-btn {
+  width: 100%;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.submit-btn.loading {
+  background: #ccc;
+}
+
+/* 表情选择器 */
+.emoji-picker-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+}
+
+.emoji-picker {
+  width: 100%;
+  background: white;
+  border-radius: 30rpx 30rpx 0 0;
+  padding: 30rpx;
+  max-height: 60vh;
+}
+
+.emoji-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.emoji-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15rpx;
+}
+
+.emoji-item {
+  width: calc(12.5% - 13rpx);
+  min-width: 80rpx;
+}
+
+.emoji-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  background: #f5f5f5;
+  border-radius: 10rpx;
+  font-size: 40rpx;
+}
+
+.emoji-item:active {
+  background: #e0e0e0;
+}
+

@@ -1,0 +1,116 @@
+<!--pages/posts-detail/posts-detail.wxml-->
+<view class="container">
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 帖子详情 -->
+  <view wx:else class="post-detail">
+    <!-- 帖子内容 -->
+    <view class="post-card">
+      <view class="post-header">
+        <image class="user-avatar" src="{{post.avatar}}" mode="aspectFill"></image>
+        <view class="user-info">
+          <text class="user-name">{{post.nickname}}</text>
+          <text class="post-time">{{post.createTime}}</text>
+        </view>
+        <view class="post-meta">
+          <text class="location">{{post.location}}</text>
+          <text class="insect-name">{{post.insectName}}</text>
+        </view>
+      </view>
+
+      <view class="post-content">
+        <text class="content-text">{{post.content}}</text>
+      </view>
+
+      <view wx:if="{{post.imageUrl}}" class="post-image">
+        <image class="content-image" src="{{post.imageUrl}}" mode="aspectFit"></image>
+      </view>
+
+      <view class="post-stats">
+        <view class="stat-item">
+          <text class="stat-icon">👁️</text>
+          <text class="stat-text">{{post.viewCount}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-icon">💬</text>
+          <text class="stat-text">{{post.commentCount}}</text>
+        </view>
+        <button 
+          class="like-btn {{liked ? 'liked' : ''}}" 
+          bindtap="likePost"
+        >
+          <text class="like-icon">{{liked ? '❤️' : '🤍'}}</text>
+          <text class="like-text">{{post.likeCount}}</text>
+        </button>
+      </view>
+    </view>
+
+    <!-- 评论列表 -->
+    <view class="comments-section">
+      <view class="section-title">
+        <text>评论 ({{post.commentCount}})</text>
+      </view>
+      
+      <view wx:if="{{comments.length === 0}}" class="no-comments">
+        <text>暂无评论，快来发表第一条评论吧~</text>
+      </view>
+
+      <view wx:else class="comments-list">
+        <view wx:for="{{comments}}" wx:key="id" class="comment-item">
+          <image class="comment-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+          <view class="comment-content">
+            <view class="comment-header">
+              <text class="comment-name">{{item.nickname}}</text>
+              <text class="comment-time">{{item.createTime}}</text>
+            </view>
+            <text class="comment-text">{{item.content}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 评论输入框 -->
+    <view class="comment-input-bar">
+      <view class="input-wrapper">
+        <input 
+          class="comment-input" 
+          placeholder="写下你的评论..." 
+          value="{{commentInput}}"
+          bindinput="onCommentInput"
+          confirm-type="send"
+          bindconfirm="submitComment"
+        />
+        <button class="emoji-btn" bindtap="toggleEmojiPicker">😊</button>
+      </view>
+      <button 
+        class="submit-btn {{submitting ? 'loading' : ''}}" 
+        bindtap="submitComment"
+        disabled="{{submitting}}"
+      >
+        {{submitting ? '发送中...' : '发送'}}
+      </button>
+    </view>
+
+    <!-- 表情选择器 -->
+    <view wx:if="{{showEmojiPicker}}" class="emoji-picker-mask" bindtap="toggleEmojiPicker">
+      <view class="emoji-picker" catchtap="stopPropagation">
+        <view class="emoji-title">选择表情</view>
+        <view class="emoji-grid">
+          <view 
+            wx:for="{{emojis}}" 
+            wx:key="index" 
+            class="emoji-item" 
+            bindtap="selectEmoji"
+            data-emoji="{{item}}"
+          >
+            <text>{{item}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+

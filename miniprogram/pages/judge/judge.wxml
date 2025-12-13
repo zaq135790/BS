@@ -7,12 +7,15 @@
 
   <!-- 游戏开始前 -->
   <view wx:elif="{{!gameStarted && !gameEnded}}" class="start-screen">
-    <view class="title">益害判官</view>
-    <view class="subtitle">你能正确判断这些昆虫是益虫还是害虫吗？</view>
-    <view class="game-info">
-      <text>共 {{totalQuestions}} 题</text>
+    <image class="start-bg" src="{{startBackground}}" mode="aspectFill"></image>
+    <view class="start-overlay"></view>
+    <view class="start-content">
+      <view class="title-spacer"></view>
+      <view class="start-actions">
+        <button class="start-btn" bindtap="startGame">开始游戏</button>
+        <button class="exit-btn" bindtap="goBack">退出游戏</button>
+      </view>
     </view>
-    <button class="start-btn" bindtap="startGame">开始游戏</button>
   </view>
 
   <!-- 游戏进行中 -->
@@ -20,60 +23,176 @@
     <!-- 进度条 -->
     <view class="progress">
       <view class="progress-bar">
-        <view class="progress-fill" style="width: {{(answeredQuestions / totalQuestions) * 100}}%"></view>
+        <view class="progress-fill" style="width: {{progressPercent}}%"></view>
       </view>
-      <text class="progress-text">{{answeredQuestions}}/{{totalQuestions}}</text>
+      <text class="progress-text">第 {{currentQuestionIndex + 1}} 题 - {{currentStep === 1 ? '猜名字' : '判断益害'}}</text>
     </view>
 
-    <!-- 分数显示 -->
-    <view class="score">得分: {{score}}</view>
-
-    <!-- 昆虫图片和名称 -->
-    <view class="insect-display">
-      <image class="insect-image" src="{{currentInsect.child_image_url}}" mode="aspectFit"></image>
-      <text class="insect-name">{{currentInsect.name}}</text>
-    </view>
-
-    <!-- 答案选项 -->
-    <view class="answer-options">
-      <button 
-        class="answer-btn beneficial {{userAnswer === '益虫' ? 'selected' : ''}} {{showResult && currentInsect.type === '益虫' ? 'correct' : ''}} {{showResult && userAnswer === '益虫' && currentInsect.type !== '益虫' ? 'wrong' : ''}}"
-        bindtap="selectAnswer" 
-        data-answer="益虫"
-        disabled="{{showResult}}"
-      >
-        益虫
-      </button>
-      <button 
-        class="answer-btn harmful {{userAnswer === '害虫' ? 'selected' : ''}} {{showResult && currentInsect.type === '害虫' ? 'correct' : ''}} {{showResult && userAnswer === '害虫' && currentInsect.type !== '害虫' ? 'wrong' : ''}}"
-        bindtap="selectAnswer" 
-        data-answer="害虫"
-        disabled="{{showResult}}"
-      >
-        害虫
-      </button>
-    </view>
-
-    <!-- 结果显示 -->
-    <view wx:if="{{showResult}}" class="result-display">
-      <view class="result-text {{userAnswer === currentInsect.type ? 'correct' : 'wrong'}}">
-        {{userAnswer === currentInsect.type ? '回答正确！' : '回答错误！'}}
+    <!-- 第一步：猜名字 -->
+    <view wx:if="{{currentStep === 1}}" class="step-container">
+      <!-- 提示按钮 -->
+      <view class="hint-btn" bindtap="onHintClick">
+        <text class="hint-icon">💡</text>
       </view>
-      <view class="correct-answer">正确答案: {{currentInsect.type}}</view>
-      <view class="response-time">用时: {{formattedResponseTime}}</view>
+      
+      <!-- 昆虫图片 -->
+      <view class="insect-display">
+        <image class="insect-image" src="{{currentInsect.image}}" mode="aspectFit"></image>
+      </view>
+      
+      <!-- 口诀 -->
+      <view class="rhyme-section">
+        <text class="rhyme-label">口诀：</text>
+        <text class="rhyme-text">{{currentInsect.rhyme}}</text>
+      </view>
+      
+      <!-- 显示答案（提示后） -->
+      <view wx:if="{{showInsectName}}" class="answer-display">
+        <text class="answer-text">正确答案：{{currentInsect.name}}</text>
+      </view>
+      
+      <!-- 输入框 -->
+      <view class="input-section">
+        <input 
+          class="name-input" 
+          placeholder="请输入昆虫名字" 
+          value="{{currentInsectName}}"
+          bindinput="onNameInput"
+          disabled="{{showResult}}"
+        />
+        <button class="submit-btn" bindtap="submitNameAnswer" disabled="{{showResult}}">提交</button>
+      </view>
+      
+      <!-- 结果显示 -->
+      <view wx:if="{{showResult}}" class="result-display">
+        <view class="result-text {{isCorrect ? 'correct' : 'wrong'}}">
+          {{isCorrect ? '回答正确！' : '回答错误，再想想！'}}
+        </view>
+        <!-- 只在第二次错误后显示正确答案 -->
+        <view wx:if="{{!isCorrect && showCorrectAnswer}}" class="correct-answer">
+          正确答案：{{currentInsect.name}}
+        </view>
+      </view>
+    </view>
+
+    <!-- 第二步：判断益害 -->
+    <view wx:if="{{currentStep === 2}}" class="step-container">
+      <!-- 昆虫信息 -->
+      <view class="insect-info">
+        <image class="insect-image-small" src="{{currentInsect.image}}" mode="aspectFit"></image>
+        <text class="insect-name">{{currentInsect.name}}</text>
+        <text class="insect-rhyme">{{currentInsect.rhyme}}</text>
+      </view>
+      
+      <!-- 问题 -->
+      <view class="question-section">
+        <text class="question-text">这个昆虫是益虫还是害虫？</text>
+      </view>
+      
+      <!-- 答案选项 -->
+      <view class="answer-options">
+        <button 
+          class="answer-btn beneficial {{userAnswer === '益虫' ? 'selected' : ''}} {{showResult && currentInsect.type === '益虫' ? 'correct' : ''}} {{showResult && userAnswer === '益虫' && currentInsect.type !== '益虫' ? 'wrong' : ''}}"
+          bindtap="selectAnswer" 
+          data-answer="益虫"
+          disabled="{{showResult}}"
+        >
+          益虫
+        </button>
+        <button 
+          class="answer-btn harmful {{userAnswer === '害虫' ? 'selected' : ''}} {{showResult && currentInsect.type === '害虫' ? 'correct' : ''}} {{showResult && userAnswer === '害虫' && currentInsect.type !== '害虫' ? 'wrong' : ''}}"
+          bindtap="selectAnswer" 
+          data-answer="害虫"
+          disabled="{{showResult}}"
+        >
+          害虫
+        </button>
+      </view>
+      
+      <!-- 结果显示 -->
+      <view wx:if="{{showResult}}" class="result-display">
+        <view class="result-text {{isCorrect ? 'correct' : 'wrong'}}">
+          {{isCorrect ? '回答正确！' : '回答错误！'}}
+        </view>
+        <view class="correct-answer">正确答案：{{currentInsect.type}}</view>
+      </view>
     </view>
   </view>
 
+  <!-- 结束并查看报告 -->
+  <view wx:if="{{gameStarted && !gameEnded}}" class="end-actions">
+    <button class="end-btn" bindtap="finishEarly">结束并查看报告</button>
+  </view>
+
   <!-- 游戏结束 -->
-  <view wx:elif="{{gameEnded}}" class="end-screen">
+  <view wx:elif="{{gameEnded && !showReport}}" class="end-screen">
     <view class="end-title">游戏结束</view>
     <view class="end-content">
-      <text class="congratulations">恭喜你！答对了{{score}}题，正确率{{accuracy}}%</text>
+      <view class="score-display">
+        <text class="score-label">得分</text>
+        <text class="score-value">{{score}}/{{totalQuestions}}</text>
+      </view>
+      <text class="accuracy">正确率：{{accuracy}}%</text>
     </view>
     <view class="buttons">
+      <button class="btn primary" bindtap="viewReport">查看报告</button>
+      <button class="btn secondary" bindtap="restartGame">再来一局</button>
+      <button class="btn secondary" bindtap="goBack">返回</button>
+    </view>
+  </view>
+
+  <!-- 答题报告 -->
+  <view wx:elif="{{showReport}}" class="report-screen">
+    <view class="report-header">
+      <text class="report-title">答题报告</text>
+      <text class="close-btn" bindtap="closeReport">✕</text>
+    </view>
+    <view class="report-content">
+      <view class="report-summary">
+        <view class="summary-item">
+          <text class="summary-label">总题数</text>
+          <text class="summary-value">{{totalQuestions}}</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-label">答对题数</text>
+          <text class="summary-value">{{score}}</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-label">正确率</text>
+          <text class="summary-value">{{accuracy}}%</text>
+        </view>
+      </view>
+      
+      <view class="report-details">
+        <text class="details-title">详细记录</text>
+        <view wx:for="{{answerRecords}}" wx:key="questionIndex" class="detail-item">
+          <view class="detail-header">
+            <text class="detail-question">第 {{item.questionIndex}} 题：{{item.insectName}}</text>
+            <text class="detail-status {{item.typeCorrect ? 'correct' : 'wrong'}}">
+              {{item.typeCorrect ? '✓' : '✗'}}
+            </text>
+          </view>
+          <view class="detail-content">
+            <view class="detail-step">
+              <text class="detail-step-label">第一步（猜名字）：</text>
+              <text class="detail-step-value {{item.nameCorrect ? 'correct' : 'wrong'}}">
+                {{item.nameAnswer}} {{item.nameCorrect ? '✓' : '✗'}}
+                <text wx:if="{{item.nameWrongCount >= 2}}" class="wrong-hint">（错误{{item.nameWrongCount}}次）</text>
+              </text>
+            </view>
+            <view class="detail-step">
+              <text class="detail-step-label">第二步（判断益害）：</text>
+              <text class="detail-step-value {{item.typeCorrect ? 'correct' : 'wrong'}}">
+                {{item.typeAnswer}} {{item.typeCorrect ? '✓' : '✗'}}
+              </text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="report-buttons">
       <button class="btn primary" bindtap="restartGame">再来一局</button>
       <button class="btn secondary" bindtap="goBack">返回</button>
     </view>
   </view>
 </view>
-

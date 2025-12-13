@@ -332,8 +332,8 @@ async function getGameRecords({ userId, gameType = null, page = 1, pageSize = 10
       params.push(gameType);
     }
     
-    // 确保使用 completion_time 字段排序（字段已通过 ensureTableColumns 确保存在）
-    sql += ' ORDER BY score DESC, completion_time ASC, created_at DESC LIMIT ? OFFSET ?';
+    // 按创建时间倒序排列（最新的在前面）
+    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
     params.push(pageSize, (page - 1) * pageSize);
     
     let rows;

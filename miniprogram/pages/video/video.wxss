@@ -18,9 +18,13 @@
   background: #000;
 }
 
+.video-wrapper {
+  position: relative;
+}
+
 .video-player {
   width: 100%;
-  height: 400rpx;
+  height: 420rpx;
   background: #000;
 }
 
@@ -31,6 +35,48 @@
   width: 100vw;
   height: 100vh;
   z-index: 9999;
+}
+
+.fs-fab {
+  position: absolute;
+  right: 30rpx;
+  bottom: 30rpx;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 14rpx 24rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  z-index: 8;
+  line-height: 1;
+}
+
+.pause-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 20rpx 30rpx;
+  border-radius: 50rpx;
+  font-size: 36rpx;
+  z-index: 6;
+}
+
+.fullscreen-back {
+  position: absolute;
+  top: 30rpx;
+  left: 30rpx;
+  z-index: 7;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border-radius: 50%;
+  width: 70rpx;
+  height: 70rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34rpx;
 }
 
 .video-info {
@@ -83,6 +129,7 @@
   padding: 30rpx;
   background: white;
   border-top: 1rpx solid #eee;
+  justify-content: center;
 }
 
 .control-btn {
@@ -94,6 +141,10 @@
   padding: 20rpx;
   font-size: 28rpx;
   font-weight: bold;
+}
+
+.control-btn.single {
+  flex: 0 0 60%;
 }
 
 .recommendations {
@@ -119,7 +170,7 @@
   display: flex;
   align-items: center;
   padding: 20rpx;
-  background: #f8f8f8;
+  background: linear-gradient(135deg, rgba(245, 250, 240, 0.9) 0%, rgba(230, 243, 225, 0.9) 100%);
   border-radius: 15rpx;
 }
 

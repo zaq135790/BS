@@ -7,6 +7,9 @@
 
   <!-- 游戏开始前 -->
   <view wx:elif="{{!gameStarted && !gameEnded}}" class="start-screen">
+    <image class="start-bg" src="{{startBackground}}" mode="aspectFill"></image>
+    <view class="start-overlay"></view>
+    <view class="start-content">
     <view class="title">虫虫拼图</view>
     <view class="subtitle">将昆虫拼图完整拼好</view>
     
@@ -32,6 +35,7 @@
     </view>
 
     <button class="start-btn" bindtap="startGame">开始拼图</button>
+    </view>
   </view>
 
   <!-- 游戏进行中 -->

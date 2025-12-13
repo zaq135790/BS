@@ -1,0 +1,102 @@
+<view class="container">
+  <!-- 顶部操作栏 -->
+  <view class="header">
+    <view class="header-title">{{historyType === 'watch' ? '观看记录管理' : '浏览记录管理'}}</view>
+    <view class="header-actions">
+      <view class="action-btn" bindtap="toggleDeleteMode">
+        <text>{{deleteMode ? '取消' : '删除'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 删除模式提示 -->
+  <view class="delete-tip" wx:if="{{deleteMode}}">
+    <view class="delete-tip-left">
+      <text>请选择要删除的记录（已选择 {{selectedItems.length}} 条）</text>
+    </view>
+    <view class="delete-tip-right">
+      <view class="select-all-btn" bindtap="toggleSelectAll">
+        <text>{{isAllSelected ? '取消全选' : '全选'}}</text>
+      </view>
+      <view class="delete-confirm-btn" wx:if="{{selectedItems.length > 0}}" bindtap="deleteSelectedItems">
+        <text>确认删除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 浏览记录列表 -->
+  <view class="history-list" wx:if="{{historyType === 'browse' && browseHistory.length > 0}}">
+    <view 
+      wx:for="{{browseHistory}}" 
+      wx:key="index" 
+      wx:for-item="browseItem"
+      wx:for-index="browseIndex"
+      class="history-item {{deleteMode && selectedMap[browseIndex] ? 'selected' : ''}}"
+      bindtap="goToDetail"
+      data-index="{{browseIndex}}"
+      data-item="{{browseItem}}"
+    >
+      <!-- 删除模式：显示选择框 -->
+      <view class="select-checkbox" wx:if="{{deleteMode}}">
+        <view class="checkbox {{selectedMap[browseIndex] ? 'checked' : ''}}">
+          <text wx:if="{{selectedMap[browseIndex]}}">✓</text>
+        </view>
+      </view>
+      
+      <!-- 昆虫图片 -->
+      <image class="history-image" src="{{browseItem.image}}" mode="aspectFill" />
+      
+      <!-- 昆虫信息 -->
+      <view class="history-info">
+        <text class="history-name">{{browseItem.name}}</text>
+        <text class="history-time">{{formatBrowseTime(browseItem.browseTime)}}</text>
+      </view>
+      
+      <!-- 删除模式：高亮显示 -->
+      <view class="delete-overlay" wx:if="{{deleteMode && selectedMap[browseIndex]}}">
+        <text>已选中</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 观看记录列表 -->
+  <view class="history-list" wx:if="{{historyType === 'watch' && watchHistory.length > 0}}">
+    <view 
+      wx:for="{{watchHistory}}" 
+      wx:key="index" 
+      wx:for-item="watchItem"
+      wx:for-index="watchIndex"
+      class="history-item {{deleteMode && selectedMap[watchIndex] ? 'selected' : ''}}"
+      bindtap="goToDetail"
+      data-index="{{watchIndex}}"
+      data-item="{{watchItem}}"
+    >
+      <!-- 删除模式：显示选择框 -->
+      <view class="select-checkbox" wx:if="{{deleteMode}}">
+        <view class="checkbox {{selectedMap[watchIndex] ? 'checked' : ''}}">
+          <text wx:if="{{selectedMap[watchIndex]}}">✓</text>
+        </view>
+      </view>
+      
+      <!-- 视频缩略图 -->
+      <image class="history-image" src="{{watchItem.thumbnail}}" mode="aspectFill" />
+      
+      <!-- 视频信息 -->
+      <view class="history-info">
+        <text class="history-name">{{watchItem.title}}</text>
+        <text class="history-time">{{formatBrowseTime(watchItem.watchTime)}}</text>
+      </view>
+      
+      <!-- 删除模式：高亮显示 -->
+      <view class="delete-overlay" wx:if="{{deleteMode && selectedMap[watchIndex]}}">
+        <text>已选中</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{(historyType === 'browse' && browseHistory.length === 0) || (historyType === 'watch' && watchHistory.length === 0)}}">
+    <text class="empty-icon">{{historyType === 'watch' ? '🎬' : '🔍'}}</text>
+    <text class="empty-text">还没有{{historyType === 'watch' ? '观看' : '浏览'}}记录</text>
+  </view>
+</view>

@@ -8,15 +8,22 @@ Page({
     isLoggedIn: false,
     browseHistory: [], // 浏览记录
     browseDays: 0, // 浏览天数
-    profileBackground: '',
+    watchHistory: [], // 观看记录
+    profileBackground: 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj1.jpg',
     showBackgroundPicker: false,
     // 名片背景可选图片，使用绝对路径，便于在 style 中直接使用
     backgroundOptions: [
-      '/images/bj1(1).png',
-      '/images/bj2(1).png',
-      '/images/bj3(1).png',
-      '/images/bj4(1).png'
+      'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj1.jpg',
+      'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj2.jpg',
+      'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj3.jpg',
+      'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj4.jpg'
     ],
+    avatarOptions: [
+      'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx1.jpg',
+      'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx2.jpg',
+      'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx3.jpg'
+    ],
+    showAvatarPicker: false,
     // 身份切换动画标记
     roleSwitching: false
   },
@@ -39,6 +46,7 @@ Page({
 
     if (!isLoggedIn) {
       // 未登录，重置为访客视图
+      const defaultBg = this.data.backgroundOptions[0];
       this.setData({
         userInfo: {
           nickname: '未登录',
@@ -46,8 +54,11 @@ Page({
           user_type: 'child'
         },
         browseHistory: [],
-        browseDays: 0
+        browseDays: 0,
+        watchHistory: [],
+        profileBackground: defaultBg
       });
+      wx.setStorageSync('profile_bg_default', defaultBg);
       return;
     }
 
@@ -55,6 +66,7 @@ Page({
     await this.loadUserInfo(showLoading);
     await this.initProfileBackground();
     await this.loadBrowseHistory();
+    await this.loadWatchHistory();
   },
 
   // 加载用户信息
@@ -156,7 +168,8 @@ Page({
         user_type: 'child'
       },
       browseHistory: [],
-      browseDays: 0
+      browseDays: 0,
+      watchHistory: []
     });
     wx.showToast({
       title: '已退出',
@@ -166,44 +179,70 @@ Page({
 
   // 修改头像
   changeAvatar() {
-    const that = this;
-    wx.chooseImage({
-      count: 1,
-      sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
-      success: async (res) => {
-        const tempFilePath = res.tempFilePaths[0];
-        try {
-          // 上传到云存储
-          const cloudPath = `avatars/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
-          const uploadRes = await wx.cloud.uploadFile({
-            cloudPath,
-            filePath: tempFilePath
-          });
+    this.setData({ showAvatarPicker: true });
+  },
 
-          const avatarUrl = uploadRes.fileID || tempFilePath;
+  closeAvatarPicker() {
+    this.setData({ showAvatarPicker: false });
+  },
 
-          // 更新用户信息（本地 + 云端）
-          await that.updateUserInfo({
-            avatar_url: avatarUrl
-          });
+  async selectAvatar(e) {
+    const url = e.currentTarget.dataset.url;
+    try {
+      await this.updateUserInfo({ avatar_url: url });
+      this.setData({
+        'userInfo.avatar_url': url,
+        showAvatarPicker: false
+      });
+      wx.showToast({
+        title: '头像已更新',
+        icon: 'success'
+      });
+    } catch (err) {
+      console.error('选择头像失败:', err);
+      wx.showToast({
+        title: '更新失败，请重试',
+        icon: 'none'
+      });
+    }
+  },
 
-          wx.showToast({
-            title: '头像已更新',
-            icon: 'success'
-          });
-        } catch (e) {
-          console.error('上传头像失败:', e);
-          wx.showToast({
-            title: '上传失败，请重试',
-            icon: 'none'
-          });
-        }
-      },
-      fail: (err) => {
-        console.error('选择图片失败:', err);
+  // 修改昵称
+  async changeNickname() {
+    try {
+      const res = await wx.showModal({
+        title: '修改昵称',
+        editable: true,
+        placeholderText: '请输入新昵称',
+        content: this.data.userInfo.nickname || ''
+      });
+
+      if (!res.confirm) return;
+
+      const nickname = (res.content || '').trim();
+      if (!nickname) {
+        wx.showToast({
+          title: '昵称不能为空',
+          icon: 'none'
+        });
+        return;
       }
-    });
+
+      await this.updateUserInfo({ nickname });
+      this.setData({
+        'userInfo.nickname': nickname
+      });
+      wx.showToast({
+        title: '昵称已更新',
+        icon: 'success'
+      });
+    } catch (err) {
+      console.error('修改昵称失败:', err);
+      wx.showToast({
+        title: '修改失败，请重试',
+        icon: 'none'
+      });
+    }
   },
 
   // 更新用户信息（优先本地存储，失败不影响使用）
@@ -317,16 +356,12 @@ Page({
 
   // 初始化背景
   async initProfileBackground() {
+    // 无论登录与否，固定使用序号为 1 的背景（数组第一个）
+    const background = this.data.backgroundOptions[0];
     const app = getApp();
     const userId = app.globalData.userId || app.globalData.openid || 'default';
     const bgKey = `profile_bg_${userId}`;
-    let background = wx.getStorageSync(bgKey);
-    
-    if (!background) {
-      background = this.getRandomBackground();
-      wx.setStorageSync(bgKey, background);
-    }
-    
+    wx.setStorageSync(bgKey, background);
     this.setData({
       profileBackground: background
     });
@@ -411,8 +446,9 @@ Page({
         return timeB - timeA;
       });
       
-      // 只保留最近20条记录
-      history = history.slice(0, 20);
+      // 儿童身份：只显示最新3条；家长身份：显示最近20条
+      const displayCount = userType === 'child' ? 3 : 20;
+      const displayHistory = history.slice(0, displayCount);
       
       // 计算浏览天数
       let browseDays = 0;
@@ -429,13 +465,15 @@ Page({
       }
       
       this.setData({
-        browseHistory: history,
+        browseHistory: displayHistory,
+        allBrowseHistory: history, // 保存全部记录用于管理页面
         browseDays: browseDays
       });
     } catch (error) {
       console.error('加载浏览记录失败:', error);
       this.setData({
-        browseHistory: []
+        browseHistory: [],
+        allBrowseHistory: []
       });
     }
   },
@@ -492,13 +530,6 @@ Page({
     });
   },
 
-  // 跳转到社区（家长功能）
-  goToCommunity() {
-    wx.navigateTo({
-      url: '/pages/posts/posts'
-    });
-  },
-
   // 跳转到知识库（家长功能）
   goToKnowledgeBase() {
     wx.switchTab({
@@ -521,10 +552,66 @@ Page({
     });
   },
 
-  // 跳转到观察记录
-  goToObservations() {
+  // 跳转到浏览记录管理页面
+  goToHistoryManage() {
     wx.navigateTo({
-      url: '/pages/posts/posts?mine=true'
+      url: '/pages/history-manage/history-manage?type=browse'
+    });
+  },
+
+  // 跳转到观看记录管理页面
+  goToWatchHistoryManage() {
+    wx.navigateTo({
+      url: '/pages/history-manage/history-manage?type=watch'
+    });
+  },
+
+  // 加载观看记录
+  async loadWatchHistory() {
+    const app = getApp();
+    const userId = app.globalData.userId || app.globalData.openid || 'default';
+    const userType = this.data.userInfo.user_type || 'parent';
+    
+    try {
+      // 从本地存储获取观看记录（按身份区分）
+      const historyKey = `watch_history_${userId}_${userType}`;
+      let history = wx.getStorageSync(historyKey) || [];
+      
+      // 按观看时间倒序排列
+      history.sort((a, b) => {
+        const timeA = new Date(a.watchTime || 0).getTime();
+        const timeB = new Date(b.watchTime || 0).getTime();
+        return timeB - timeA;
+      });
+      
+      // 儿童身份：只显示最新3条；家长身份：显示最近20条
+      const displayCount = userType === 'child' ? 3 : 20;
+      const displayHistory = history.slice(0, displayCount);
+      
+      this.setData({
+        watchHistory: displayHistory,
+        allWatchHistory: history // 保存全部记录用于管理页面
+      });
+    } catch (error) {
+      console.error('加载观看记录失败:', error);
+      this.setData({
+        watchHistory: [],
+        allWatchHistory: []
+      });
+    }
+  },
+
+  // 格式化观看时间
+  formatWatchTime(timestamp) {
+    return this.formatBrowseTime(timestamp);
+  },
+
+  // 跳转到视频详情
+  goToVideoDetail(e) {
+    const videoId = e.currentTarget.dataset.id;
+    if (!videoId) return;
+    wx.navigateTo({
+      url: `/pages/video/video?id=${videoId}`
     });
   },
 
@@ -533,6 +620,7 @@ Page({
     await this.loadUserInfo();
     await this.initProfileBackground();
     await this.loadBrowseHistory();
+    await this.loadWatchHistory();
     wx.stopPullDownRefresh();
   }
 });

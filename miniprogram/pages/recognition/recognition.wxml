@@ -1,0 +1,71 @@
+<!--pages/recognition/recognition.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">昆虫识别</text>
+    <text class="subtitle">上传昆虫照片，AI帮你识别并生成百科全书</text>
+  </view>
+
+  <!-- 图片选择区域 -->
+  <view class="upload-section">
+    <view wx:if="{{!imageUrl}}" class="upload-placeholder" bindtap="chooseImage">
+      <text class="upload-icon">📷</text>
+      <text class="upload-text">点击选择图片</text>
+      <text class="upload-hint">支持相册和拍照</text>
+    </view>
+    <view wx:else class="image-preview">
+      <image class="preview-image" src="{{imageUrl}}" mode="aspectFit" bindtap="previewImage"></image>
+      <view class="image-actions">
+        <button class="action-btn secondary" bindtap="reset">重新选择</button>
+        <button class="action-btn primary" bindtap="startRecognition" disabled="{{recognizing}}">
+          {{recognizing ? '识别中...' : '开始识别'}}
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 识别中 -->
+  <view wx:if="{{recognizing}}" class="recognizing">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">AI正在识别中，请稍候...</text>
+  </view>
+
+  <!-- 识别结果 -->
+  <view wx:if="{{result && !recognizing}}" class="result-section">
+    <view class="result-header">
+      <text class="result-title">识别结果</text>
+      <view class="insect-badge {{result.isHarmful ? 'harmful' : 'beneficial'}}">
+        {{result.isHarmful ? '害虫' : '益虫'}}
+      </view>
+    </view>
+
+    <view class="insect-name">{{result.insectName}}</view>
+
+    <view class="encyclopedia">
+      <view class="encyclopedia-title">📚 百科全书</view>
+      <view class="encyclopedia-content">
+        <text class="content-text">{{result.encyclopedia}}</text>
+      </view>
+    </view>
+
+    <!-- 害虫防治链接 -->
+    <view wx:if="{{result.isHarmful && result.taobaoLink}}" class="prevention-section">
+      <view class="prevention-title">🛒 推荐防治工具</view>
+      <view class="prevention-content">
+        <text class="prevention-text">{{result.preventionTip}}</text>
+        <button class="taobao-btn" bindtap="goToTaobao" data-url="{{result.taobaoLink}}">
+          查看推荐商品
+        </button>
+      </view>
+    </view>
+
+    <button class="reset-btn" bindtap="reset">识别其他昆虫</button>
+  </view>
+
+  <!-- 错误提示 -->
+  <view wx:if="{{error && !recognizing}}" class="error-section">
+    <text class="error-icon">⚠️</text>
+    <text class="error-text">{{error}}</text>
+    <button class="retry-btn" bindtap="startRecognition">重试</button>
+  </view>
+</view>
+

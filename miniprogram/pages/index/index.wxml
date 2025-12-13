@@ -1,19 +1,11 @@
 <view class="container">
+  <!-- 背景图片 -->
+  <image class="background-image" src="cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj1.jpg" mode="aspectFill"></image>
   <!-- 搜索框 -->
   <view class="search-box">
-    <view class="search-input">
+    <view class="search-input" bindtap="goToSearch">
       <icon type="search" size="16" color="#999"></icon>
-      <input placeholder="搜索昆虫名称..." placeholder-class="placeholder-style" value="{{searchKeyword}}" bindinput="onSearchInput" />
-    </view>
-    <!-- 搜索结果 -->
-    <view class="search-results" wx:if="{{showSearchResults && searchResults.length > 0}}">
-      <view class="search-result-item" wx:for="{{searchResults}}" wx:key="id" bindtap="selectSearchResult" data-index="{{index}}">
-        <text class="result-name">{{item.name}}</text>
-        <text class="result-type">{{item.type}}</text>
-      </view>
-    </view>
-    <view class="search-results empty" wx:if="{{showSearchResults && searchResults.length === 0}}">
-      <text>没有找到相关昆虫</text>
+      <text class="search-placeholder">搜索昆虫名称...</text>
     </view>
   </view>
 
@@ -25,7 +17,7 @@
     <swiper indicator-dots="{{true}}" autoplay="{{true}}" interval="3000" duration="500" circular="{{true}}">
       <block wx:for="{{swiperList}}" wx:key="id">
         <swiper-item>
-          <image src="{{item.image}}" mode="widthFix" class="swiper-image" catchtap="onSwiperTap" />
+          <image src="{{item.image}}" mode="aspectFit" class="swiper-image" catchtap="onSwiperTap" />
         </swiper-item>
       </block>
     </swiper>
@@ -33,25 +25,31 @@
 
   <!-- 功能入口 -->
   <view class="features">
+    <!-- 通用功能（儿童和家长都有） -->
     <view class="feature-item" bindtap="goToCategory">
-      <image src="/images/icons/book.png" class="feature-icon" />
+      <image src="/images/tabbar/book_selected.png" class="feature-icon" />
       <text>虫虫图鉴</text>
     </view>
     <view class="feature-item" bindtap="goToGame">
-      <image src="/images/icons/game.png" class="feature-icon" />
+      <image src="/images/tabbar/game_selected.png" class="feature-icon" />
       <text>趣味小游戏</text>
     </view>
     <view class="feature-item" bindtap="goToTheater">
-      <image src="/images/icons/video.png" class="feature-icon" />
+      <image src="/images/tabbar/video_selected.png" class="feature-icon" />
       <text>虫虫剧场</text>
     </view>
     <view class="feature-item" bindtap="goToPosts">
-      <image src="/images/icons/post.png" class="feature-icon" />
+      <image src="/images/tabbar/speak.png" class="feature-icon" />
       <text>畅所欲言</text>
     </view>
+    <!-- 科普知识库和昆虫识别（所有身份都显示） -->
     <view class="feature-item" bindtap="goToKnowledgeBase">
-      <image src="/images/icons/book.png" class="feature-icon" />
+      <image src="/images/tabbar/zlk.png" class="feature-icon" />
       <text>科普知识库</text>
+    </view>
+    <view class="feature-item" bindtap="goToInsectRecognition">
+      <image src="/images/tabbar/shibie.png" class="feature-icon" />
+      <text>昆虫识别</text>
     </view>
   </view>
 

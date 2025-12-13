@@ -5,12 +5,17 @@
     "pages/detail/detail",
     "pages/game/game",
     "pages/posts/posts",
+    "pages/posts-detail/posts-detail",
     "pages/theater/theater",
     "pages/video/video",
     "pages/judge/judge",
     "pages/puzzle/puzzle",
     "pages/observation/observation",
-    "pages/mine/mine"
+    "pages/mine/mine",
+    "pages/history-manage/history-manage",
+    "pages/knowledge/knowledge",
+    "pages/search/search",
+    "pages/recognition/recognition"
   ],
   "window": {
     "backgroundTextStyle": "light",

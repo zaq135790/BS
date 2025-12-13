@@ -1,6 +1,6 @@
 <view class="container">
-  <!-- 顶部动画视频（后期导入） -->
-  <view class="video-container">
+  <!-- 儿童身份：顶部动画视频/图片 -->
+  <view wx:if="{{userRole === 'child'}}" class="video-container">
     <video 
       wx:if="{{videoUrl}}"
       src="{{videoUrl}}" 
@@ -9,9 +9,13 @@
       show-center-play-btn="{{true}}"
       enable-play-gesture="{{true}}"
     ></video>
-    <view wx:else class="video-placeholder">
-      <text class="placeholder-text">🎬 动画视频（待导入）</text>
-    </view>
+    <!-- 儿童身份：显示封面图片 -->
+    <image 
+      wx:else
+      src="{{insectData.image || 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/images/bj3.png'}}" 
+      class="main-image"
+      mode="aspectFill"
+    ></image>
   </view>
 
   <!-- 详情内容 -->
@@ -19,20 +23,66 @@
     <view class="title">{{insectData.name}}</view>
     <view class="type-badge">{{insectData.type}}</view>
     
-    <!-- 昆虫口诀 -->
-    <view class="info-section rhyme-section">
-      <view class="section-title">📝 昆虫口诀</view>
-      <view class="section-content rhyme-content">
-        <text class="rhyme-text">{{insectData.rhyme}}</text>
+    <!-- 家长身份：科普知识 -->
+    <block wx:if="{{userRole === 'parent'}}">
+      <!-- 识别要点 -->
+      <view class="info-section identify-section">
+        <view class="section-title">🔍 识别要点</view>
+        <!-- 三张照片轮播图（放在识别要点文字上面） -->
+        <view class="gallery-wrapper" wx:if="{{insectData.galleryImages && insectData.galleryImages.length > 0}}">
+          <swiper 
+            indicator-dots="{{true}}" 
+            autoplay="{{false}}" 
+            interval="3000" 
+            duration="500" 
+            circular="{{false}}"
+            class="detail-gallery-swiper"
+          >
+            <block wx:for="{{insectData.galleryImages}}" wx:key="index">
+              <swiper-item>
+                <image 
+                  src="{{item}}" 
+                  class="detail-gallery-image" 
+                  mode="aspectFill"
+                  bindtap="previewImage"
+                  data-src="{{item}}"
+                  data-urls="{{insectData.galleryImages}}"
+                ></image>
+              </swiper-item>
+            </block>
+          </swiper>
+        </view>
+        <view class="section-content identify-content">
+          <text class="identify-text">{{insectData.identify}}</text>
+        </view>
       </view>
-    </view>
 
-    <!-- 昆虫小知识 -->
-    <view class="info-section knowledge-section">
-      <view class="section-title">💡 昆虫小知识</view>
-      <view class="section-content knowledge-content">
-        <text class="knowledge-text">{{insectData.knowledge}}</text>
+      <!-- 家庭指引 -->
+      <view class="info-section guide-section">
+        <view class="section-title">💡 家庭指引</view>
+        <view class="section-content guide-content">
+          <text class="guide-text">{{insectData.guide}}</text>
+        </view>
       </view>
-    </view>
+    </block>
+
+    <!-- 儿童身份：昆虫口诀和知识 -->
+    <block wx:else>
+      <!-- 昆虫口诀 -->
+      <view class="info-section rhyme-section">
+        <view class="section-title">📝 昆虫口诀</view>
+        <view class="section-content rhyme-content">
+          <text class="rhyme-text">{{insectData.rhyme}}</text>
+        </view>
+      </view>
+
+      <!-- 昆虫小知识 -->
+      <view class="info-section knowledge-section">
+        <view class="section-title">💡 昆虫小知识</view>
+        <view class="section-content knowledge-content">
+          <text class="knowledge-text">{{insectData.knowledge}}</text>
+        </view>
+      </view>
+    </block>
   </view>
 </view>

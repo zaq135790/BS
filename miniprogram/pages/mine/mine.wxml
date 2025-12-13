@@ -1,13 +1,15 @@
 <view class="container">
+  <!-- 背景图片 -->
+  <image class="background-image" src="cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj1.jpg" mode="aspectFill"></image>
   <!-- 顶部用户信息区域：根据登录态显示不同状态 -->
-  <view class="profile-card" style="background-image: url({{profileBackground}});">
+  <view class="profile-card" style="background-image: url('{{profileBackground}}');">
     <view class="profile-overlay"></view>
     <view class="profile-content">
       <view class="avatar-wrapper" bindtap="{{isLoggedIn ? 'changeAvatar' : 'login'}}">
-        <image class="avatar" src="{{userInfo.avatar_url || '/images/default-avatar.png'}}" mode="aspectFill" />
+        <image class="avatar" src="{{userInfo.avatar_url || 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx1.jpg'}}" mode="aspectFill" />
         <view class="avatar-edit-icon">{{isLoggedIn ? '✏️' : '🔑'}}</view>
       </view>
-      <text class="nickname">{{userInfo.nickname || '未登录'}}</text>
+      <text class="nickname editable" bindtap="changeNickname">{{userInfo.nickname || '未登录'}}</text>
       <text class="role-badge">{{isLoggedIn ? (userInfo.user_type === 'parent' ? '家长' : '儿童') : '访客'}}</text>
     </view>
     <view class="card-action" bindtap="{{isLoggedIn ? 'openBackgroundPicker' : 'login'}}">
@@ -39,6 +41,10 @@
     <view class="section-header">
       <text class="section-title">浏览记录</text>
       <text class="section-subtitle">{{isLoggedIn ? (userInfo.user_type === 'parent' ? '家长' : '儿童') : '访客'}}身份下的浏览记录</text>
+      <!-- 显示管理按钮（儿童和家长身份都显示） -->
+      <view wx:if="{{isLoggedIn && (userInfo.user_type === 'child' || userInfo.user_type === 'parent')}}" class="manage-btn" bindtap="goToHistoryManage">
+        <text>管理</text>
+      </view>
     </view>
     <view class="browse-stats">
       <view class="browse-stat-item">
@@ -58,6 +64,37 @@
     <view class="empty-browse" wx:else>
       <text class="empty-icon">🔍</text>
       <text class="empty-text">还没有浏览记录，快去探索虫虫图鉴吧！</text>
+    </view>
+  </view>
+
+  <!-- 观看记录 -->
+  <view class="browse-history-section">
+    <view class="section-header">
+      <text class="section-title">观看记录</text>
+      <text class="section-subtitle">{{isLoggedIn ? (userInfo.user_type === 'parent' ? '家长' : '儿童') : '访客'}}身份下的观看记录</text>
+      <!-- 儿童身份：显示管理按钮（即使没有记录也显示） -->
+      <view wx:if="{{isLoggedIn && userInfo.user_type === 'child'}}" class="manage-btn" bindtap="goToWatchHistoryManage">
+        <text>管理</text>
+      </view>
+    </view>
+    <view class="browse-stats">
+      <view class="browse-stat-item">
+        <text class="stat-number">{{watchHistory.length}}</text>
+        <text class="stat-label">已观看视频</text>
+      </view>
+    </view>
+    <view class="browse-list" wx:if="{{watchHistory.length > 0}}">
+      <view wx:for="{{watchHistory}}" wx:key="videoId" class="browse-item" bindtap="goToVideoDetail" data-id="{{item.videoId}}">
+        <image class="browse-image" src="{{item.thumbnail}}" mode="aspectFill" />
+        <view class="browse-info">
+          <text class="browse-name">{{item.title}}</text>
+          <text class="browse-time">{{formatWatchTime(item.watchTime)}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="empty-browse" wx:else>
+      <text class="empty-icon">🎬</text>
+      <text class="empty-text">还没有观看记录，快去虫虫小剧场看看吧！</text>
     </view>
   </view>
 
@@ -89,51 +126,23 @@
         </view>
         <text class="menu-arrow">></text>
       </view>
+      <view class="menu-item danger" bindtap="logout">
+        <text class="menu-icon">🚪</text>
+        <view class="menu-content">
+          <text class="menu-text">退出登录</text>
+          <text class="menu-desc">切换账号或安全退出</text>
+        </view>
+        <text class="menu-arrow">></text>
+      </view>
     </block>
 
     <!-- 家长身份功能 -->
     <block wx:elif="{{isLoggedIn}}">
-      <view class="menu-item" bindtap="goToCommunity">
-        <text class="menu-icon">💬</text>
-        <view class="menu-content">
-          <text class="menu-text">社区互动参与</text>
-          <text class="menu-desc">发表帖子、参与讨论</text>
-        </view>
-        <text class="menu-arrow">></text>
-      </view>
       <view class="menu-item" bindtap="goToKnowledgeBase">
         <text class="menu-icon">📚</text>
         <view class="menu-content">
           <text class="menu-text">科普知识库</text>
           <text class="menu-desc">丰富的昆虫知识</text>
-        </view>
-        <text class="menu-arrow">></text>
-      </view>
-      <view class="menu-item" bindtap="goToInsectRecognition">
-        <text class="menu-icon">🔍</text>
-        <view class="menu-content">
-          <text class="menu-text">昆虫识别</text>
-          <text class="menu-desc">智能识别昆虫</text>
-        </view>
-        <text class="menu-arrow">></text>
-      </view>
-    </block>
-
-    <!-- 通用功能 -->
-    <block wx:if="{{isLoggedIn}}">
-      <view class="menu-item" bindtap="goToGameRecords">
-        <text class="menu-icon">📊</text>
-        <view class="menu-content">
-          <text class="menu-text">游戏记录</text>
-          <text class="menu-desc">查看游戏成绩</text>
-        </view>
-        <text class="menu-arrow">></text>
-      </view>
-      <view class="menu-item" bindtap="goToObservations">
-        <text class="menu-icon">📝</text>
-        <view class="menu-content">
-          <text class="menu-text">观察记录</text>
-          <text class="menu-desc">我的观察分享</text>
         </view>
         <text class="menu-arrow">></text>
       </view>
@@ -175,6 +184,20 @@
         <button class="picker-btn secondary" bindtap="useRandomBackground">随机一张</button>
       </view>
       <button class="picker-close" bindtap="closeBackgroundPicker">完成</button>
+    </view>
+  </view>
+
+  <!-- 头像选择器 -->
+  <view class="avatar-picker-mask {{showAvatarPicker ? 'show' : ''}}" bindtap="closeAvatarPicker">
+    <view class="avatar-picker" catchtap="stopPropagation">
+      <view class="picker-title">选择头像</view>
+      <view class="picker-grid avatar-grid">
+        <view class="picker-item avatar-item {{userInfo.avatar_url === item ? 'selected' : ''}}" wx:for="{{avatarOptions}}" wx:key="item" data-url="{{item}}" bindtap="selectAvatar">
+          <image src="{{item}}" mode="aspectFill"></image>
+          <view class="picker-check" wx:if="{{userInfo.avatar_url === item}}">✓</view>
+        </view>
+      </view>
+      <button class="picker-close" bindtap="closeAvatarPicker">取消</button>
     </view>
   </view>
 </view>
