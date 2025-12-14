@@ -41,7 +41,7 @@ Page({
 
   // 视频数据（云存储映射，含 14 条）
   getMockVideos() {
-    const base = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/vidoes';
+    const base = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/videos';
     const makeTitle = (name) => `了不起的小虫——${name}`;
     const dbmfTitle = '蜜蜂嗡嗡的小趣事';
     const dbyhcTitle = '萤火虫点点';

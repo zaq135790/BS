@@ -9,15 +9,30 @@ Page({
     browseHistory: [], // 浏览记录
     browseDays: 0, // 浏览天数
     watchHistory: [], // 观看记录
-    profileBackground: 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj1.jpg',
+    profileBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    profileBackgroundType: 'color', // 'color' 或 'image'
+    profileCardStyle: 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);', // 计算好的样式字符串
     showBackgroundPicker: false,
+    currentTab: 'color', // 背景选择器当前标签页
+    // 名片背景可选颜色（渐变色）
+    backgroundColorOptions: [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+      'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+      'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)'
+    ],
     // 名片背景可选图片，使用绝对路径，便于在 style 中直接使用
-    backgroundOptions: [
+    backgroundImageOptions: [
       'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj1.jpg',
       'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj2.jpg',
       'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj3.jpg',
       'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj4.jpg'
     ],
+    backgroundOptions: [], // 动态组合的颜色和图片选项
     avatarOptions: [
       'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx1.jpg',
       'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx2.jpg',
@@ -29,6 +44,8 @@ Page({
   },
 
   async onLoad() {
+    // 初始化背景选项
+    this.initBackgroundOptions();
     await this.refreshLoginState();
   },
 
@@ -46,7 +63,7 @@ Page({
 
     if (!isLoggedIn) {
       // 未登录，重置为访客视图
-      const defaultBg = this.data.backgroundOptions[0];
+      const defaultBg = this.data.backgroundColorOptions[0];
       this.setData({
         userInfo: {
           nickname: '未登录',
@@ -56,9 +73,10 @@ Page({
         browseHistory: [],
         browseDays: 0,
         watchHistory: [],
-        profileBackground: defaultBg
+        profileBackground: defaultBg,
+        profileBackgroundType: 'color'
       });
-      wx.setStorageSync('profile_bg_default', defaultBg);
+      await this.updateProfileCardStyle(defaultBg, 'color');
       return;
     }
 
@@ -89,20 +107,36 @@ Page({
       
       // 本地没有数据，尝试从数据库获取
       if (app.globalData.userInfo && app.globalData.openid) {
-        const result = await app.callDatabase('getUserInfo', {
-          openid: app.globalData.openid
+        const result = await wx.cloud.callFunction({
+          name: 'user-service',
+          data: {
+            action: 'getUserInfo',
+            data: {
+              openid: app.globalData.openid
+            }
+          }
         });
+        const userResult = result.result;
         
-        if (result.success && result.data) {
+        if (userResult.success && userResult.data) {
           const userInfo = {
-            nickname: result.data.nickname || '新用户',
-            avatar_url: result.data.avatar_url || '',
-            user_type: result.data.user_type || 'child'  // 默认儿童版本
+            nickname: userResult.data.nickname || '新用户',
+            avatar_url: userResult.data.avatar_url || '',
+            user_type: userResult.data.user_type || 'child'  // 默认儿童版本
           };
           this.setData({
             userInfo: userInfo
           });
           wx.setStorageSync(userInfoKey, userInfo);
+          
+          // 从数据库加载背景信息
+          if (userResult.data.profile_background && userResult.data.profile_background_type) {
+            this.setData({
+              profileBackground: userResult.data.profile_background,
+              profileBackgroundType: userResult.data.profile_background_type
+            });
+            await this.updateProfileCardStyle(userResult.data.profile_background, userResult.data.profile_background_type);
+          }
           return;
         }
       }
@@ -356,26 +390,139 @@ Page({
 
   // 初始化背景
   async initProfileBackground() {
-    // 无论登录与否，固定使用序号为 1 的背景（数组第一个）
-    const background = this.data.backgroundOptions[0];
     const app = getApp();
     const userId = app.globalData.userId || app.globalData.openid || 'default';
+    
+    // 优先从数据库读取
+    if (app.globalData.openid) {
+      try {
+        const result = await wx.cloud.callFunction({
+          name: 'user-service',
+          data: {
+            action: 'getUserInfo',
+            data: {
+              openid: app.globalData.openid
+            }
+          }
+        });
+        const userResult = result.result;
+        
+        if (userResult.success && userResult.data && userResult.data.profile_background && userResult.data.profile_background_type) {
+          this.setData({
+            profileBackground: userResult.data.profile_background,
+            profileBackgroundType: userResult.data.profile_background_type
+          });
+          await this.updateProfileCardStyle(userResult.data.profile_background, userResult.data.profile_background_type);
+          // 同步到本地存储
+          const bgKey = `profile_bg_${userId}`;
+          const bgTypeKey = `profile_bg_type_${userId}`;
+          wx.setStorageSync(bgKey, userResult.data.profile_background);
+          wx.setStorageSync(bgTypeKey, userResult.data.profile_background_type);
+          this.initBackgroundOptions();
+          return;
+        }
+      } catch (error) {
+        console.error('从数据库加载背景失败:', error);
+      }
+    }
+    
+    // 从本地存储读取
     const bgKey = `profile_bg_${userId}`;
-    wx.setStorageSync(bgKey, background);
+    const bgTypeKey = `profile_bg_type_${userId}`;
+    let savedBg = wx.getStorageSync(bgKey);
+    let savedType = wx.getStorageSync(bgTypeKey);
+    
+    if (savedBg && savedType) {
+      this.setData({
+        profileBackground: savedBg,
+        profileBackgroundType: savedType
+      });
+      await this.updateProfileCardStyle(savedBg, savedType);
+    } else {
+      // 默认使用第一个颜色背景
+      const defaultBg = this.data.backgroundColorOptions[0];
+      this.setData({
+        profileBackground: defaultBg,
+        profileBackgroundType: 'color'
+      });
+      wx.setStorageSync(bgKey, defaultBg);
+      wx.setStorageSync(bgTypeKey, 'color');
+      await this.updateProfileCardStyle(defaultBg, 'color');
+    }
+    
+    // 初始化背景选项（颜色 + 图片） 
+    this.initBackgroundOptions();
+  },
+
+  // 初始化背景选项
+  initBackgroundOptions() {
+    const colorOptions = this.data.backgroundColorOptions.map(color => ({
+      value: color,
+      type: 'color'
+    }));
+    const imageOptions = this.data.backgroundImageOptions.map(image => ({
+      value: image,
+      type: 'image'
+    }));
     this.setData({
-      profileBackground: background
+      backgroundOptions: [...colorOptions, ...imageOptions]
     });
   },
 
+  // 更新名片样式
+  async updateProfileCardStyle(background, type) {
+    let style = '';
+    if (type === 'color') {
+      style = `background: ${background};`;
+      this.setData({
+        profileCardStyle: style,
+        profileBackgroundType: 'color'
+      });
+    } else {
+      // 如果是图片，需要处理云存储URL
+      let imageUrl = background;
+      if (background && background.startsWith('cloud://')) {
+        try {
+          const res = await wx.cloud.getTempFileURL({
+            fileList: [background]
+          });
+          if (res.fileList && res.fileList.length > 0 && res.fileList[0].tempFileURL) {
+            imageUrl = res.fileList[0].tempFileURL;
+          }
+        } catch (error) {
+          console.error('转换背景图片URL失败:', error);
+          // 转换失败时使用原URL
+        }
+      }
+      // 图片背景需要完整的样式属性
+      style = `background-image: url('${imageUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
+      this.setData({
+        profileCardStyle: style,
+        profileBackgroundType: 'image'
+      });
+    }
+  },
+
   getRandomBackground() {
-    const options = this.data.backgroundOptions;
-    const index = Math.floor(Math.random() * options.length);
-    return options[index];
+    const colorOptions = this.data.backgroundColorOptions;
+    const index = Math.floor(Math.random() * colorOptions.length);
+    return {
+      value: colorOptions[index],
+      type: 'color'
+    };
   },
 
   openBackgroundPicker() {
     this.setData({
-      showBackgroundPicker: true
+      showBackgroundPicker: true,
+      currentTab: this.data.profileBackgroundType || 'color'
+    });
+  },
+
+  switchTab(e) {
+    const tab = e.currentTarget.dataset.tab;
+    this.setData({
+      currentTab: tab
     });
   },
 
@@ -386,8 +533,9 @@ Page({
   },
 
   selectBackground(e) {
-    const url = e.currentTarget.dataset.url;
-    this.saveProfileBackground(url);
+    const value = e.currentTarget.dataset.value;
+    const type = e.currentTarget.dataset.type;
+    this.saveProfileBackground(value, type);
   },
 
   async uploadBackground() {
@@ -398,27 +546,70 @@ Page({
         sourceType: ['album', 'camera']
       });
       if (res.tempFilePaths && res.tempFilePaths.length > 0) {
-        this.saveProfileBackground(res.tempFilePaths[0]);
+        // 上传图片到云存储（如果需要）
+        // 这里暂时直接使用本地路径
+        this.saveProfileBackground(res.tempFilePaths[0], 'image');
       }
     } catch (error) {
       console.error('上传背景失败:', error);
+      wx.showToast({
+        title: '上传失败，请重试',
+        icon: 'none'
+      });
     }
   },
 
   useRandomBackground() {
     const randomBg = this.getRandomBackground();
-    this.saveProfileBackground(randomBg);
+    this.saveProfileBackground(randomBg.value, randomBg.type);
   },
 
-  saveProfileBackground(url) {
+  async saveProfileBackground(value, type) {
     const app = getApp();
     const userId = app.globalData.userId || app.globalData.openid || 'default';
     const bgKey = `profile_bg_${userId}`;
-    wx.setStorageSync(bgKey, url);
+    const bgTypeKey = `profile_bg_type_${userId}`;
+    
+    // 先更新本地存储（确保立即生效）
+    wx.setStorageSync(bgKey, value);
+    wx.setStorageSync(bgTypeKey, type);
+    
     this.setData({
-      profileBackground: url,
+      profileBackground: value,
+      profileBackgroundType: type,
       showBackgroundPicker: false  // 选择后关闭选择器
     });
+    
+    // 更新名片样式
+    await this.updateProfileCardStyle(value, type);
+    
+    // 同步到数据库
+    if (app.globalData.openid) {
+      try {
+        const result = await wx.cloud.callFunction({
+          name: 'user-service',
+          data: {
+            action: 'updateUserInfo',
+            data: {
+              openid: app.globalData.openid,
+              userInfo: {
+                profile_background: value,
+                profile_background_type: type
+              }
+            }
+          }
+        });
+        
+        const updateResult = result.result;
+        if (!updateResult.success) {
+          console.error('保存背景到数据库失败:', updateResult.message);
+        }
+      } catch (error) {
+        console.error('保存背景到数据库出错:', error);
+        // 失败不影响本地使用
+      }
+    }
+    
     wx.showToast({
       title: '背景已更新',
       icon: 'success',
@@ -586,7 +777,10 @@ Page({
       
       // 儿童身份：只显示最新3条；家长身份：显示最近20条
       const displayCount = userType === 'child' ? 3 : 20;
-      const displayHistory = history.slice(0, displayCount);
+      let displayHistory = history.slice(0, displayCount);
+      
+      // 转换云存储URL为临时URL
+      displayHistory = await this.convertWatchHistoryUrls(displayHistory);
       
       this.setData({
         watchHistory: displayHistory,
@@ -598,6 +792,63 @@ Page({
         watchHistory: [],
         allWatchHistory: []
       });
+    }
+  },
+
+  // 转换观看记录中的云存储URL为临时URL
+  async convertWatchHistoryUrls(history) {
+    if (!history || history.length === 0) return history;
+    
+    // 修复路径拼写错误（vidoes -> videos）
+    history = history.map(item => {
+      if (item.thumbnail && item.thumbnail.includes('/vidoes/')) {
+        item.thumbnail = item.thumbnail.replace('/vidoes/', '/videos/');
+      }
+      if (item.video_url && item.video_url.includes('/vidoes/')) {
+        item.video_url = item.video_url.replace('/vidoes/', '/videos/');
+      }
+      return item;
+    });
+    
+    // 收集所有需要转换的云存储URL
+    const cloudUrls = [];
+    history.forEach(item => {
+      if (item.thumbnail && item.thumbnail.startsWith('cloud://')) {
+        cloudUrls.push(item.thumbnail);
+      }
+    });
+    
+    if (cloudUrls.length === 0) return history;
+    
+    try {
+      // 批量转换URL
+      const res = await wx.cloud.getTempFileURL({
+        fileList: cloudUrls
+      });
+      
+      // 创建URL映射
+      const urlMap = {};
+      if (res.fileList) {
+        res.fileList.forEach(file => {
+          if (file.fileID && file.tempFileURL) {
+            urlMap[file.fileID] = file.tempFileURL;
+          }
+        });
+      }
+      
+      // 更新历史记录中的URL
+      return history.map(item => {
+        if (item.thumbnail && item.thumbnail.startsWith('cloud://') && urlMap[item.thumbnail]) {
+          return {
+            ...item,
+            thumbnail: urlMap[item.thumbnail]
+          };
+        }
+        return item;
+      });
+    } catch (error) {
+      console.error('转换观看记录URL失败:', error);
+      return history; // 转换失败时返回原数据
     }
   },
 

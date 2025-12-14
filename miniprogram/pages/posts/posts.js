@@ -54,72 +54,56 @@ Page({
     
     try {
       const page = loadMore ? this.data.page + 1 : 1;
-      const limit = this.data.showAll ? 20 : 20; // 增加默认加载数量
+      const pageSize = 20;
       
-      // 从数据库获取观察记录作为帖子（不限制用户，获取所有记录）
-      // 先尝试获取所有记录
-      let result = await app.getObservationRecords(null, page, limit);
+      // 使用 social-service 获取帖子列表
+      const result = await app.getPostList(page, pageSize, 'latest');
       
-      // 如果获取失败或没有数据，尝试不传userId获取所有记录
-      if (!result.success || !result.data || result.data.length === 0) {
-        // 尝试通过云函数直接获取所有观察记录
-        try {
-          result = await wx.cloud.callFunction({
-            name: 'database',
-            data: {
-              action: 'getObservationRecords',
-              data: {
-                userId: null, // 不限制用户，获取所有
-                insectId: null,
-                page: page,
-                limit: limit
-              }
-            }
-          });
-          if (result.result) {
-            result = result.result;
-          }
-        } catch (cfError) {
-          console.error('调用云函数获取记录失败:', cfError);
-        }
-      }
-      
-      if (result.success && result.data && result.data.length > 0) {
-        // 收集所有需要转换的URL
-        const avatarUrl = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx1.jpg';
-        const allUrls = [avatarUrl, ...result.data.map(r => r.photo_url).filter(Boolean)];
-        const urlMap = await this.convertCloudUrls(allUrls);
+      if (result.success && result.data && result.data.list && result.data.list.length > 0) {
+        const postList = result.data.list;
         
-        // 按创建时间倒序排列（最新的在前）
-        const sortedData = [...result.data].sort((a, b) => {
-          const timeA = new Date(a.created_at || a.createdAt || 0).getTime();
-          const timeB = new Date(b.created_at || b.createdAt || 0).getTime();
-          return timeB - timeA;
+        // 收集所有需要转换的URL（头像和图片）
+        const allUrls = [];
+        postList.forEach(post => {
+          if (post.user && post.user.avatarUrl) {
+            allUrls.push(post.user.avatarUrl);
+          }
+          if (post.images && Array.isArray(post.images) && post.images.length > 0) {
+            allUrls.push(...post.images.filter(Boolean));
+          }
         });
         
-        const posts = sortedData.map(record => ({
-          id: record.id,
-          nickname: record.nickname || '匿名用户',
-          avatar: urlMap[avatarUrl] || avatarUrl,
-          content: record.notes || `在${record.observation_location}发现了${record.insect_name}`,
-          imageUrl: urlMap[record.photo_url] || record.photo_url || '',
-          createTime: this.formatTime(record.created_at || record.createdAt),
-          likeCount: record.like_count || 0,
-          liked: false,
-          location: record.observation_location || '未知地点',
-          insectName: record.insect_name || '未知昆虫'
-        }));
+        const urlMap = await this.convertCloudUrls(allUrls);
+        
+        // 转换帖子数据格式
+        const posts = postList.map(post => {
+          const avatarUrl = post.user?.avatarUrl || 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx1.jpg';
+          const imageUrl = post.images && post.images.length > 0 ? post.images[0] : '';
+          
+          return {
+            id: post._id || post.id,
+            userId: post.userId || post.user?._id,
+            nickname: post.user?.nickName || post.user?.nickname || '未知用户',
+            avatar: urlMap[avatarUrl] || avatarUrl,
+            content: post.content || '',
+            imageUrl: imageUrl ? (urlMap[imageUrl] || imageUrl) : '',
+            createTime: this.formatTime(post.createTime || post.created_at),
+            likeCount: post.likeCount || post.like_count || 0,
+            liked: post.isLiked || false,
+            location: post.location || '',
+            insectName: post.insectName || post.insect_name || ''
+          };
+        });
         
         this.setData({
           posts: loadMore ? [...this.data.posts, ...posts] : posts,
           page: page,
-          hasMore: posts.length >= limit,
+          hasMore: result.data.pagination && page < result.data.pagination.totalPages,
           loading: false
         });
       } else {
-        // 使用模拟数据
+        // 如果没有数据，使用模拟数据作为后备
         const mockPosts = this.getMockPosts();
-        // 转换模拟数据的URL
         const mockUrls = [
           ...mockPosts.map(p => p.avatar).filter(Boolean),
           ...mockPosts.map(p => p.imageUrl).filter(Boolean)
@@ -140,7 +124,7 @@ Page({
       }
     } catch (error) {
       console.error('加载帖子失败:', error);
-      // 使用模拟数据
+      // 使用模拟数据作为后备
       const mockPosts = this.getMockPosts();
       const mockUrls = [
         ...mockPosts.map(p => p.avatar).filter(Boolean),
@@ -359,90 +343,77 @@ Page({
         photoUrl = uploadResult.fileID;
       } catch (uploadError) {
         console.error('图片上传失败:', uploadError);
-        // 如果上传失败，使用临时路径
-        photoUrl = this.data.imageUrl;
+        wx.showToast({
+          title: '图片上传失败',
+          icon: 'none'
+        });
+        this.setData({ submitting: false });
+        return;
       }
       
-      // 保存观察记录（移除不支持的insectName参数）
-      let result = null;
-      try {
-        result = await app.saveObservationRecord({
-          userId: app.globalData.userId || 1,
-          insectId: 1,
-          observationLocation: this.data.location.trim(),
-          observationTime: new Date().toISOString(),
-          photoUrl: photoUrl,
-          notes: this.data.content.trim()
+      // 使用 social-service 创建帖子
+      const result = await app.createPost({
+        content: this.data.content.trim(),
+        images: [photoUrl],
+        location: this.data.location.trim(),
+        insectName: this.data.insectName.trim()
+      });
+      
+      if (result.success) {
+        wx.showToast({
+          title: '发布成功',
+          icon: 'success'
         });
-      } catch (saveError) {
-        console.error('保存记录失败:', saveError);
-        // 即使保存失败，也继续执行，因为数据可能已经保存
-        result = { success: true };
+        
+        // 关闭弹窗并重置表单
+        this.setData({
+          showPublishModal: false,
+          imageUrl: '',
+          content: '',
+          location: '',
+          insectName: ''
+        });
+        
+        // 延迟一下再刷新，确保数据已保存
+        setTimeout(async () => {
+          this.setData({ 
+            page: 1,  // 重置页码
+            posts: [] // 清空现有帖子，强制重新加载
+          });
+          await this.refreshPosts();
+        }, 500);
+      } else {
+        wx.showToast({
+          title: result.message || '发布失败',
+          icon: 'none'
+        });
       }
-      
-      // 无论保存是否成功，都刷新列表（因为数据可能已经保存到数据库）
-      wx.showToast({
-        title: '发布成功',
-        icon: 'success'
-      });
-      
-      // 关闭弹窗并重置表单
-      this.setData({
-        showPublishModal: false,
-        imageUrl: '',
-        content: '',
-        location: '',
-        insectName: ''
-      });
-      
-      // 延迟一下再刷新，确保数据已保存
-      setTimeout(async () => {
-        this.setData({ 
-          page: 1,  // 重置页码
-          posts: [] // 清空现有帖子，强制重新加载
-        });
-        await this.refreshPosts();
-      }, 1000);
       
     } catch (error) {
       console.error('发布帖子失败:', error);
-      // 即使出错，也尝试刷新列表
       wx.showToast({
-        title: '已发布，正在刷新',
-        icon: 'success',
-        duration: 1500
+        title: '发布失败，请重试',
+        icon: 'none'
       });
-      
-      this.setData({
-        showPublishModal: false,
-        imageUrl: '',
-        content: '',
-        location: '',
-        insectName: ''
-      });
-      
-      this.setData({ 
-        page: 1,
-        posts: []
-      });
-      setTimeout(async () => {
-        await this.refreshPosts();
-      }, 1000);
     } finally {
       this.setData({ submitting: false });
     }
   },
 
   // 点赞帖子
-  likePost(e) {
+  async likePost(e) {
     e.stopPropagation(); // 阻止事件冒泡
     const postId = e.currentTarget.dataset.id;
+    const app = getApp();
+    
+    // 先更新UI（乐观更新）
     const posts = this.data.posts.map(post => {
-      if (post.id === postId) {
+      if (post.id == postId) {
+        const newLiked = !post.liked;
         return {
           ...post,
-          liked: !post.liked,
-          likeCount: post.liked ? post.likeCount - 1 : post.likeCount + 1
+          liked: newLiked,
+          likeCount: newLiked ? post.likeCount + 1 : post.likeCount - 1
         };
       }
       return post;
@@ -451,6 +422,43 @@ Page({
     this.setData({
       posts: posts
     });
+    
+    // 调用后端接口
+    try {
+      const result = await app.likePost(postId);
+      if (!result.success) {
+        // 如果失败，恢复原状态
+        const restoredPosts = this.data.posts.map(post => {
+          if (post.id == postId) {
+            return {
+              ...post,
+              liked: !post.liked,
+              likeCount: post.liked ? post.likeCount - 1 : post.likeCount + 1
+            };
+          }
+          return post;
+        });
+        this.setData({ posts: restoredPosts });
+        wx.showToast({
+          title: result.message || '操作失败',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      console.error('点赞失败:', error);
+      // 恢复原状态
+      const restoredPosts = this.data.posts.map(post => {
+        if (post.id == postId) {
+          return {
+            ...post,
+            liked: !post.liked,
+            likeCount: post.liked ? post.likeCount - 1 : post.likeCount + 1
+          };
+        }
+        return post;
+      });
+      this.setData({ posts: restoredPosts });
+    }
   },
 
   // 阻止事件冒泡
@@ -459,25 +467,43 @@ Page({
   },
 
   // 图片加载错误处理
-  onImageError(e) {
+  async onImageError(e) {
     const type = e.currentTarget.dataset.type;
     const defaultAvatar = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx1.jpg';
     
     if (type === 'avatar') {
-      // 头像加载失败，尝试转换URL
-      wx.cloud.getTempFileURL({
-        fileList: [defaultAvatar]
-      }).then(res => {
-        if (res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) {
-          const posts = this.data.posts.map(post => ({
-            ...post,
-            avatar: post.avatar === defaultAvatar ? res.fileList[0].tempFileURL : post.avatar
-          }));
-          this.setData({ posts });
-        }
-      }).catch(err => {
+      // 头像加载失败，使用默认头像
+      try {
+        const urlMap = await this.convertCloudUrls([defaultAvatar]);
+        const convertedUrl = urlMap[defaultAvatar] || defaultAvatar;
+        
+        // 更新所有失败的头像
+        const posts = this.data.posts.map(post => {
+          // 如果当前头像加载失败，使用默认头像
+          if (!post.avatar || post.avatar === '') {
+            return {
+              ...post,
+              avatar: convertedUrl
+            };
+          }
+          return post;
+        });
+        
+        this.setData({ posts });
+      } catch (err) {
         console.error('转换头像URL失败:', err);
-      });
+        // 如果转换失败，使用一个简单的占位符
+        const posts = this.data.posts.map(post => {
+          if (!post.avatar || post.avatar === '') {
+            return {
+              ...post,
+              avatar: defaultAvatar
+            };
+          }
+          return post;
+        });
+        this.setData({ posts });
+      }
     }
   },
 

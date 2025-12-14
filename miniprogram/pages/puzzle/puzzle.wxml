@@ -10,31 +10,32 @@
     <image class="start-bg" src="{{startBackground}}" mode="aspectFill"></image>
     <view class="start-overlay"></view>
     <view class="start-content">
-    <view class="title">虫虫拼图</view>
-    <view class="subtitle">将昆虫拼图完整拼好</view>
-    
-    <!-- 难度选择 -->
-    <view class="difficulty-selector">
-      <text class="label">选择难度:</text>
-      <view class="difficulty-options">
-        <button 
-          class="difficulty-btn {{difficulty === '简单' ? 'active' : ''}}"
-          bindtap="selectDifficulty"
-          data-difficulty="简单"
-        >
-          简单 (2x2)
-        </button>
-        <button 
-          class="difficulty-btn {{difficulty === '困难' ? 'active' : ''}}"
-          bindtap="selectDifficulty"
-          data-difficulty="困难"
-        >
-          困难 (3x3)
-        </button>
+      <view class="title">虫虫拼图</view>
+      <view class="subtitle">将昆虫拼图完整拼好</view>
+      
+      <!-- 难度选择 -->
+      <view class="difficulty-selector">
+        <text class="label">选择难度:</text>
+        <view class="difficulty-options">
+          <button 
+            class="difficulty-btn {{difficulty === '简单' ? 'active' : ''}}"
+            bindtap="selectDifficulty"
+            data-difficulty="简单"
+            disabled="{{loading}}"
+          >
+            简单 (2x2)
+          </button>
+          <button 
+            class="difficulty-btn {{difficulty === '困难' ? 'active' : ''}}"
+            bindtap="selectDifficulty"
+            data-difficulty="困难"
+            disabled="{{loading}}"
+          >
+            困难 (3x3)
+          </button>
+        </view>
+        <view wx:if="{{loading}}" class="loading-tip">正在加载拼图...</view>
       </view>
-    </view>
-
-    <button class="start-btn" bindtap="startGame">开始拼图</button>
     </view>
   </view>
 

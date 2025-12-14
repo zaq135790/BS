@@ -19,14 +19,19 @@ Page({
     loading: true,
     showHint: false,
     gridSize: 2, // 默认简单难度为2*2
-    startBackground: '' // 开始界面背景图片URL
+    startBackground: '', // 开始界面背景图片URL
+    bgmEnabled: true, // BGM开关
+    bgmContext: null // 背景音乐上下文
   },
 
   async onLoad(options) {
     const insectId = options.insectId;
     this.setData({ insectId });
     await this.loadStartBackground();
-    await this.loadPuzzleConfig();
+    // 初始化BGM
+    this.initBGM();
+    // 不再自动加载，等待用户选择难度
+    this.setData({ loading: false });
   },
 
   // 加载开始界面背景图片
@@ -66,23 +71,109 @@ Page({
       clearInterval(this.timer);
       this.timer = null;
     }
+    // 停止并销毁BGM
+    this.stopBGM();
   },
 
-  // 加载拼图配置
-  async loadPuzzleConfig() {
+  // 初始化BGM
+  initBGM() {
+    const bgmPath = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/music/Sunbeam Smile.mp3';
+    
+    // 先获取临时URL
+    wx.cloud.getTempFileURL({
+      fileList: [bgmPath]
+    }).then(res => {
+      if (res.fileList && res.fileList.length > 0 && res.fileList[0].tempFileURL) {
+        const bgmUrl = res.fileList[0].tempFileURL;
+        const bgmContext = wx.createInnerAudioContext();
+        bgmContext.src = bgmUrl;
+        bgmContext.loop = true; // 循环播放
+        bgmContext.volume = 0.5; // 音量50%
+        bgmContext.onError((err) => {
+          console.error('BGM播放错误:', err);
+        });
+        this.setData({ bgmContext });
+      } else {
+        console.warn('BGM URL转换失败，尝试直接使用云存储路径');
+        const bgmContext = wx.createInnerAudioContext();
+        bgmContext.src = bgmPath;
+        bgmContext.loop = true;
+        bgmContext.volume = 0.5;
+        bgmContext.onError((err) => {
+          console.error('BGM播放错误:', err);
+        });
+        this.setData({ bgmContext });
+      }
+    }).catch(err => {
+      console.error('获取BGM临时URL失败:', err);
+      // 如果转换失败，直接使用云存储路径
+      const bgmContext = wx.createInnerAudioContext();
+      bgmContext.src = bgmPath;
+      bgmContext.loop = true;
+      bgmContext.volume = 0.5;
+      bgmContext.onError((err) => {
+        console.error('BGM播放错误:', err);
+      });
+      this.setData({ bgmContext });
+    });
+  },
+
+  // 播放BGM
+  playBGM() {
+    if (this.data.bgmContext && this.data.bgmEnabled) {
+      this.data.bgmContext.play();
+    }
+  },
+
+  // 停止BGM
+  stopBGM() {
+    if (this.data.bgmContext) {
+      this.data.bgmContext.stop();
+    }
+  },
+
+  // 暂停BGM
+  pauseBGM() {
+    if (this.data.bgmContext) {
+      this.data.bgmContext.pause();
+    }
+  },
+
+  // 切换BGM开关
+  toggleBGM() {
+    const newState = !this.data.bgmEnabled;
+    this.setData({ bgmEnabled: newState });
+    if (newState) {
+      this.playBGM();
+    } else {
+      this.pauseBGM();
+    }
+  },
+
+  // 加载并随机选择拼图配置
+  async loadRandomPuzzleConfig() {
     const app = getApp();
     
     try {
+      this.setData({ loading: true });
+      
       const result = await app.getPuzzleConfigs(this.data.insectId, this.data.difficulty);
       
       if (result.success && result.data.length > 0) {
+        // 随机选择一个拼图配置
+        const randomIndex = Math.floor(Math.random() * result.data.length);
+        const selectedConfig = result.data[randomIndex];
+        
         this.setData({
-          puzzleConfig: result.data[0],
+          puzzleConfig: selectedConfig,
           loading: false
         });
-        this.generatePuzzle();
+        
+        // 生成拼图并自动开始游戏
+        await this.generatePuzzle();
+        this.startGame();
       } else {
-        // 使用默认配置：简单2*2(4块)、困难3*3(9块)
+        // 如果没有配置，使用默认配置
         const piecesCount = this.data.difficulty === '简单' ? 4 : 9;
         this.setData({
           puzzleConfig: {
@@ -98,27 +189,18 @@ Page({
           },
           loading: false
         });
-        this.generatePuzzle();
+        await this.generatePuzzle();
+        this.startGame();
       }
     } catch (error) {
       console.error('加载拼图配置失败:', error);
-      // 使用默认配置：简单2*2(4块)、困难3*3(9块)
-      const piecesCount = this.data.difficulty === '简单' ? 4 : 9;
       this.setData({
-        puzzleConfig: {
-          pieces_count: piecesCount,
-          base_image_url: 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/child_pt _by/mf蜜蜂/mf.jpg',
-          full_image_url: 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/child_pt _by/mf蜜蜂/mf.jpg',
-          slice_urls: [
-            'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/child_pt _by/mf蜜蜂/1.jpg',
-            'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/child_pt _by/mf蜜蜂/2.jpg',
-            'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/child_pt _by/mf蜜蜂/3.jpg',
-            'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/child_pt _by/mf蜜蜂/4.jpg'
-          ]
-        },
         loading: false
       });
-      this.generatePuzzle();
+      wx.showToast({
+        title: '加载失败，请重试',
+        icon: 'none'
+      });
     }
   },
 
@@ -259,18 +341,31 @@ Page({
   // 选择难度
   selectDifficulty(e) {
     const difficulty = e.currentTarget.dataset.difficulty;
-    this.setData({ difficulty });
-    this.loadPuzzleConfig();
+    this.setData({ 
+      difficulty,
+      puzzleConfig: null,
+      gameStarted: false,
+      gameEnded: false
+    });
+    // 随机选择拼图并自动开始游戏
+    this.loadRandomPuzzleConfig();
   },
 
   // 开始游戏
   startGame() {
+    if (!this.data.puzzleConfig) {
+      return;
+    }
+    
     this.setData({
       gameStarted: true,
       startTime: Date.now(),
       gameEnded: false,
       formattedTime: '0秒'
     });
+    
+    // 开始播放BGM
+    this.playBGM();
     
     // 定时更新显示时间
     this.timer = setInterval(() => {
@@ -351,6 +446,9 @@ Page({
       this.timer = null;
     }
     
+    // 停止BGM
+    this.stopBGM();
+    
     const duration = Math.floor((Date.now() - this.data.startTime) / 1000);
     const score = this.calculateScore(duration);
     
@@ -404,16 +502,11 @@ Page({
       this.timer = null;
     }
     
-    this.generatePuzzle();
-    this.setData({
-      gameStarted: false,
-      gameEnded: false,
-      startTime: null,
-      completionTime: 0,
-      formattedTime: '0秒',
-      score: 0,
-      selectedPieceId: null
-    });
+    // 停止BGM
+    this.stopBGM();
+    
+    // 重新随机选择拼图并开始
+    this.loadRandomPuzzleConfig();
   },
 
   // 显示提示
@@ -429,6 +522,8 @@ Page({
 
   // 返回
   goBack() {
+    // 停止BGM
+    this.stopBGM();
     wx.navigateBack();
   },
 

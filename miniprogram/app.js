@@ -287,8 +287,8 @@ App({
   },
 
   // 获取视频列表
-  async getVideos(insectId = null, page = 1, limit = 20) {
-    return await this.callDatabase('getVideos', { insectId, page, limit });
+  async getVideos(insectId = null, category = null, page = 1, limit = 20) {
+    return await this.callDatabase('getVideos', { insectId, category, page, limit });
   },
 
   // 获取视频详情
@@ -365,6 +365,63 @@ App({
   // 获取拼图配置
   async getPuzzleConfigs(insectId, difficulty = null) {
     return await this.callGameService('getPuzzleConfigs', { insectId, difficulty });
+  },
+
+  // 调用社交服务
+  async callSocialService(action, data = {}) {
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'social-service',
+        data: {
+          action,
+          data
+        }
+      });
+      return result.result || result;
+    } catch (error) {
+      console.error('调用社交服务失败:', error);
+      return {
+        success: false,
+        message: error.message || '调用社交服务失败'
+      };
+    }
+  },
+
+  // 获取帖子列表
+  async getPostList(page = 1, pageSize = 20, sort = 'latest') {
+    return await this.callSocialService('getPostList', { page, pageSize, sort });
+  },
+
+  // 获取帖子详情
+  async getPostDetail(postId) {
+    return await this.callSocialService('getPostDetail', { 
+      postId, 
+      userId: this.globalData.userId 
+    });
+  },
+
+  // 创建帖子
+  async createPost(postData) {
+    return await this.callSocialService('createPost', {
+      userId: this.globalData.userId,
+      ...postData
+    });
+  },
+
+  // 点赞/取消点赞帖子
+  async likePost(postId) {
+    return await this.callSocialService('likePost', {
+      userId: this.globalData.userId,
+      postId
+    });
+  },
+
+  // 创建评论
+  async createComment(commentData) {
+    return await this.callSocialService('createComment', {
+      userId: this.globalData.userId,
+      ...commentData
+    });
   }
 });
     

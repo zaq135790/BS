@@ -5,12 +5,14 @@ const axios = require('axios')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 // 固定模型与密钥（由业务方提供）
-const MODEL = 'deepseek-ai/DeepSeek-V3.2'
+// 聊天使用文本模型，识别使用视觉模型
+const CHAT_MODEL = 'deepseek-ai/DeepSeek-V3.2'
+const VISION_MODEL = 'zai-org/GLM-4.6V'  // 视觉模型用于昆虫识别
 const API_KEY = 'sk-hglpylwsfbizzckehuwyrrylpnebxvjlcmhgjphfbsqgowjy'
 const ENDPOINT = 'https://api.siliconflow.cn/v1/chat/completions'
-// axios 实例，统一超时 20s（与云函数配置一致）
+// axios 实例，统一超时 60s（视觉模型需要更长时间）
 const client = axios.create({
-  timeout: 20000
+  timeout: 60000
 })
 
 // 构造系统提示，确保回答贴合虫虫科普与儿童友好场景
@@ -57,7 +59,7 @@ async function handleChat({ prompt, history = [] }) {
 
   try {
     const res = await client.post(ENDPOINT, {
-      model: MODEL,
+      model: CHAT_MODEL,
       messages,
       stream: false,
       temperature: 0.7,
@@ -151,13 +153,13 @@ async function handleInsectRecognition(params) {
   const beneficialInsects = ['蜜蜂', '七星瓢虫', '蜻蜓', '螳螂', '蚯蚓', '食蚜蝇']
 
   try {
-    // 构建识别提示词 - 要求AI生成详细的百科全书
-    const recognitionPrompt = `用户上传了一张昆虫照片，请根据图片识别昆虫并生成详细的百科全书内容。
+    // 构建识别提示词 - 要求AI生成简洁的百科全书
+    const recognitionPrompt = `请仔细观察这张昆虫照片，识别昆虫并生成简洁的百科全书内容。
 
 请按照以下要求回答：
 1. 首先识别图片中的昆虫名称（中文名称）
 2. 判断是益虫还是害虫
-3. 生成一篇约1000字的百科全书式介绍，必须包含以下内容：
+3. 生成一篇简洁的百科全书式介绍，必须包含以下内容：
    - 基本信息：分类、学名、形态特征（体长、颜色、特殊标记等）
    - 生活习性：栖息环境、活动时间、食性、繁殖方式
    - 生态作用：对自然环境的影响、与人类的关系
@@ -166,38 +168,56 @@ async function handleInsectRecognition(params) {
 
 要求：
 - 内容专业但通俗易懂，适合家长阅读
-- 字数控制在800-1200字之间
-- 使用分段清晰的格式
+- 字数严格控制在200-500字之间，要求简洁精炼，不要超过500字
+- 使用分段清晰的格式，每段2-3句话，段落之间用空行分隔
+- 每个要点用1-2句话概括即可，不要展开过多细节
+- 确保每个段落都是完整的句子，不要在句子中间结束
 - 如果无法准确识别，请说明可能是什么昆虫，并给出通用介绍
 
 请直接开始回答，格式如下：
 【昆虫名称】：XXX
 【类型】：益虫/害虫
 【百科全书】：
-（这里写详细的百科全书内容）`
+（这里写详细的百科全书内容，确保总字数在200-500字之间，每个段落完整）`
+
+    // 对于视觉模型，使用支持图片的消息格式
+    // GLM-4.6V 支持图片URL直接放在content中，或者使用数组格式
+    const userMessage = {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: recognitionPrompt
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: imageUrl
+          }
+        }
+      ]
+    }
 
     const res = await client.post(ENDPOINT, {
-      model: MODEL,
+      model: VISION_MODEL,
       messages: [
         {
           role: 'system',
           content: '你是一个专业的昆虫识别专家和科普作家，擅长识别各种昆虫并撰写详细的百科全书式介绍。你的回答要专业、准确、通俗易懂。'
         },
-        {
-          role: 'user',
-          content: recognitionPrompt
-        }
+        userMessage
       ],
       stream: false,
       temperature: 0.7,
       top_p: 0.8,
-      max_tokens: 2500  // 增加token数量以生成1000字内容
+      max_tokens: 1200,  // 调整token数量以生成200-500字内容
+      enable_thinking: false  // GLM-4.6V 支持 thinking 模式，但识别任务不需要
     }, {
       headers: {
         Authorization: `Bearer ${API_KEY}`,
         'Content-Type': 'application/json'
       },
-      timeout: 30000  // 增加超时时间
+      timeout: 60000  // 视觉模型需要更长的处理时间
     })
 
     const reply = res.data?.choices?.[0]?.message?.content || ''
@@ -265,9 +285,73 @@ async function handleInsectRecognition(params) {
                         .trim()
     }
 
-    // 确保百科全书内容足够详细
-    if (encyclopedia.length < 500) {
-      encyclopedia = `# ${insectName}百科全书\n\n${insectName}是一种${isHarmful ? '常见的害虫' : '有益的昆虫'}。\n\n${encyclopedia}\n\n以上是关于${insectName}的基本介绍，如需更详细的信息，建议查阅专业的昆虫图鉴或咨询相关专家。`
+    // 智能截断函数：确保在完整段落或句子处截断
+    function smartTruncate(text, maxLength = 500) {
+      if (text.length <= maxLength) {
+        return text
+      }
+      
+      // 允许稍微超过限制（最多520字），以便找到更好的截断点
+      const searchLength = Math.min(maxLength + 20, text.length)
+      
+      // 优先级1：在段落边界截断（\n\n）
+      const paragraphIndex = text.lastIndexOf('\n\n', searchLength)
+      if (paragraphIndex > maxLength * 0.6) { // 如果段落边界在60%位置之后，使用段落边界
+        const truncated = text.substring(0, paragraphIndex).trim()
+        // 确保截断后不会太短（至少保留80%的内容）
+        if (truncated.length >= maxLength * 0.8) {
+          return truncated
+        }
+      }
+      
+      // 优先级2：在句子边界截断（。！？）
+      const sentenceEndings = ['。', '！', '？', '.', '!', '?']
+      let bestSentenceIndex = -1
+      
+      for (const ending of sentenceEndings) {
+        const index = text.lastIndexOf(ending, searchLength)
+        if (index > bestSentenceIndex && index >= maxLength * 0.75) { // 句子边界在75%位置之后
+          bestSentenceIndex = index
+        }
+      }
+      
+      if (bestSentenceIndex > 0) {
+        const truncated = text.substring(0, bestSentenceIndex + 1).trim()
+        // 确保截断后不会太短
+        if (truncated.length >= maxLength * 0.75) {
+          return truncated
+        }
+      }
+      
+      // 优先级3：在分句标点处截断（，；：）
+      const punctuation = ['，', ',', '；', ';', '：', ':']
+      for (const punc of punctuation) {
+        const index = text.lastIndexOf(punc, searchLength)
+        if (index >= maxLength * 0.85) {
+          const truncated = text.substring(0, index).trim()
+          if (truncated.length >= maxLength * 0.8) {
+            return truncated + '...'
+          }
+        }
+      }
+      
+      // 最后的选择：如果找不到合适的截断点，在字边界截断
+      // 但尽量保留更多内容（允许稍微超过限制）
+      if (text.length <= searchLength) {
+        return text.trim()
+      }
+      
+      return text.substring(0, maxLength - 3).trim() + '...'
+    }
+
+    // 确保百科全书内容在合理范围内（200-500字）
+    if (encyclopedia.length < 200) {
+      encyclopedia = `${insectName}是一种${isHarmful ? '常见的害虫' : '有益的昆虫'}。\n\n${encyclopedia}\n\n如需更详细的信息，建议查阅专业的昆虫图鉴或咨询相关专家。`
+    }
+    
+    // 如果内容过长，使用智能截断，确保在完整段落或句子处截断
+    if (encyclopedia.length > 500) {
+      encyclopedia = smartTruncate(encyclopedia, 500)
     }
 
     return {
@@ -285,7 +369,18 @@ async function handleInsectRecognition(params) {
       error?.response?.data?.error?.message ||
       error?.message ||
       '识别失败，请稍后重试'
-    console.error('昆虫识别错误:', message)
+    console.error('昆虫识别错误:', {
+      message,
+      error: error?.response?.data || error,
+      imageUrl: imageUrl ? 'provided' : 'missing'
+    })
+    
+    // 如果是格式错误，尝试使用备用格式
+    if (message.includes('format') || message.includes('invalid') || message.includes('不支持')) {
+      console.log('尝试使用备用图片格式...')
+      // 可以在这里添加备用格式的尝试
+    }
+    
     return { success: false, message }
   }
 }

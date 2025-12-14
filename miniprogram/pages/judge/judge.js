@@ -11,6 +11,8 @@ Page({
     gameEnded: false,
     showReport: false,
     startBackground: '', // 开始界面背景图片URL
+    bgmEnabled: true, // BGM开关
+    bgmContext: null, // 背景音乐上下文
     
     // 题目相关
     totalQuestions: 5, // 总共5道题
@@ -57,6 +59,8 @@ Page({
 
   async onLoad(options) {
     await this.loadStartBackground();
+    // 初始化BGM
+    this.initBGM();
     
     // 如果是从记录页面跳转过来的，加载报告数据
     if (options.fromRecord === 'true' && options.recordId) {
@@ -148,6 +152,81 @@ Page({
     }
   },
 
+  // 初始化BGM
+  initBGM() {
+    const bgmPath = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/music/Sunbeam Smile.mp3';
+    
+    // 先获取临时URL
+    wx.cloud.getTempFileURL({
+      fileList: [bgmPath]
+    }).then(res => {
+      if (res.fileList && res.fileList.length > 0 && res.fileList[0].tempFileURL) {
+        const bgmUrl = res.fileList[0].tempFileURL;
+        const bgmContext = wx.createInnerAudioContext();
+        bgmContext.src = bgmUrl;
+        bgmContext.loop = true; // 循环播放
+        bgmContext.volume = 0.5; // 音量50%
+        bgmContext.onError((err) => {
+          console.error('BGM播放错误:', err);
+        });
+        this.setData({ bgmContext });
+      } else {
+        console.warn('BGM URL转换失败，尝试直接使用云存储路径');
+        const bgmContext = wx.createInnerAudioContext();
+        bgmContext.src = bgmPath;
+        bgmContext.loop = true;
+        bgmContext.volume = 0.5;
+        bgmContext.onError((err) => {
+          console.error('BGM播放错误:', err);
+        });
+        this.setData({ bgmContext });
+      }
+    }).catch(err => {
+      console.error('获取BGM临时URL失败:', err);
+      // 如果转换失败，直接使用云存储路径
+      const bgmContext = wx.createInnerAudioContext();
+      bgmContext.src = bgmPath;
+      bgmContext.loop = true;
+      bgmContext.volume = 0.5;
+      bgmContext.onError((err) => {
+        console.error('BGM播放错误:', err);
+      });
+      this.setData({ bgmContext });
+    });
+  },
+
+  // 播放BGM
+  playBGM() {
+    if (this.data.bgmContext && this.data.bgmEnabled) {
+      this.data.bgmContext.play();
+    }
+  },
+
+  // 停止BGM
+  stopBGM() {
+    if (this.data.bgmContext) {
+      this.data.bgmContext.stop();
+    }
+  },
+
+  // 暂停BGM
+  pauseBGM() {
+    if (this.data.bgmContext) {
+      this.data.bgmContext.pause();
+    }
+  },
+
+  // 切换BGM开关
+  toggleBGM() {
+    const newState = !this.data.bgmEnabled;
+    this.setData({ bgmEnabled: newState });
+    if (newState) {
+      this.playBGM();
+    } else {
+      this.pauseBGM();
+    }
+  },
+
   // 初始化游戏
   initGame() {
     // 合并所有昆虫数据
@@ -209,6 +288,8 @@ Page({
       isCorrect: false,
       progressPercent: 0
     });
+    // 开始播放BGM
+    this.playBGM();
     this.updateProgress();
   },
   
@@ -467,6 +548,9 @@ Page({
 
   // 结束游戏
   async endGame() {
+    // 停止BGM
+    this.stopBGM();
+    
     const accuracy = Math.round((this.data.score / this.data.totalQuestions) * 100);
     this.setData({
       gameEnded: true,
@@ -492,6 +576,9 @@ Page({
 
   // 提前结束并查看报告
   async finishEarly() {
+    // 停止BGM
+    this.stopBGM();
+    
     const accuracy = Math.round((this.data.score / this.data.totalQuestions) * 100);
     this.setData({
       gameEnded: true,
@@ -532,6 +619,9 @@ Page({
 
   // 重新开始游戏
   restartGame() {
+    // 停止BGM
+    this.stopBGM();
+    
     this.initGame();
     this.setData({
       gameStarted: false,
@@ -553,12 +643,21 @@ Page({
         content: '游戏正在进行中，确定要退出吗？',
         success: (res) => {
           if (res.confirm) {
+            // 停止BGM
+            this.stopBGM();
             wx.navigateBack();
           }
         }
       });
     } else {
+      // 停止BGM
+      this.stopBGM();
       wx.navigateBack();
     }
+  },
+
+  onUnload() {
+    // 页面卸载时停止BGM
+    this.stopBGM();
   }
 });

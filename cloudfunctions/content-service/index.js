@@ -81,6 +81,31 @@ async function ensureTables() {
       INDEX idx_created_at (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `)
+
+  // 创建视频表
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS videos (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      video_id VARCHAR(64) NOT NULL UNIQUE COMMENT '视频ID（如qt, qxpc等）',
+      category VARCHAR(32) NOT NULL COMMENT '分类：益虫/害虫/其他',
+      insect_name VARCHAR(128) NOT NULL COMMENT '昆虫名称',
+      title VARCHAR(255) NOT NULL COMMENT '视频标题',
+      description TEXT COMMENT '视频描述',
+      video_url VARCHAR(500) NOT NULL COMMENT '视频URL',
+      thumbnail_url VARCHAR(500) COMMENT '缩略图URL',
+      duration VARCHAR(32) COMMENT '时长（如02:34）',
+      duration_seconds INT COMMENT '时长（秒）',
+      view_count INT DEFAULT 0 COMMENT '观看次数',
+      status VARCHAR(32) DEFAULT 'published' COMMENT '状态',
+      sort INT DEFAULT 0 COMMENT '排序',
+      created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+      updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+      INDEX idx_category (category),
+      INDEX idx_status (status),
+      INDEX idx_sort (sort),
+      INDEX idx_video_id (video_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小剧场视频数据表';
+  `)
 }
 
 let tablesReady = false
@@ -109,13 +134,15 @@ exports.main = async (event, context) => {
         return await getArticleList(data)
       case 'getArticleDetail':
         return await getArticleDetail(data)
-      // 兼容 app.callDatabase 里的其他调用（如用户、视频等），返回占位，避免 FUNCTION_NOT_FOUND
+      case 'getVideos':
+        return await getVideos(data)
+      case 'getVideoById':
+        return await getVideoById(data)
+      case 'updateVideoViewCount':
+        return await updateVideoViewCount(data)
+      // 兼容 app.callDatabase 里的其他调用（如用户等），返回占位，避免 FUNCTION_NOT_FOUND
       case 'getUserInfo':
         return { success: false, message: 'getUserInfo 未实现，请补充逻辑' }
-      case 'getVideos':
-        return { success: false, message: 'getVideos 未实现，请补充逻辑' }
-      case 'getVideoById':
-        return { success: false, message: 'getVideoById 未实现，请补充逻辑' }
       default:
         return { success: false, message: 'Invalid action' }
     }
@@ -326,6 +353,125 @@ async function getArticleDetail({ articleId }) {
     return {
       success: false,
       message: '获取文章详情失败',
+      error: error.message
+    }
+  }
+}
+
+// 获取视频列表
+async function getVideos({ insectId = null, category = null, page = 1, limit = 20 }) {
+  try {
+    let sql = 'SELECT * FROM videos WHERE status = ?'
+    const params = ['published']
+    
+    if (insectId) {
+      sql += ' AND insect_name = (SELECT name FROM insects WHERE id = ?)'
+      params.push(insectId)
+    }
+    
+    if (category) {
+      sql += ' AND category = ?'
+      params.push(category)
+    }
+    
+    // 获取总数
+    const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total')
+    const [countRows] = await pool.query(countSql, params)
+    const total = countRows[0].total
+    
+    // 获取列表
+    sql += ' ORDER BY sort ASC, id ASC LIMIT ? OFFSET ?'
+    params.push(limit, (page - 1) * limit)
+    
+    const [rows] = await pool.query(sql, params)
+    
+    return {
+      success: true,
+      data: {
+        list: rows,
+        pagination: {
+          total,
+          page,
+          pageSize: limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('获取视频列表失败:', error)
+    return {
+      success: false,
+      message: '获取视频列表失败',
+      error: error.message
+    }
+  }
+}
+
+// 获取视频详情（根据video_id）
+async function getVideoById({ id }) {
+  try {
+    if (!id) {
+      return { success: false, message: '视频ID不能为空' }
+    }
+    
+    // 支持通过id（数字）或video_id（字符串）查询
+    let sql, params
+    if (isNaN(id)) {
+      // 字符串，使用video_id查询
+      sql = 'SELECT * FROM videos WHERE video_id = ? AND status = ?'
+      params = [id, 'published']
+    } else {
+      // 数字，使用id查询
+      sql = 'SELECT * FROM videos WHERE id = ? AND status = ?'
+      params = [parseInt(id), 'published']
+    }
+    
+    const [rows] = await pool.query(sql, params)
+    
+    if (rows.length === 0) {
+      return { success: false, message: '视频不存在' }
+    }
+    
+    // 将id字段映射为前端需要的格式
+    const video = rows[0]
+    video.id = video.video_id || video.id
+    
+    return { success: true, data: video }
+  } catch (error) {
+    console.error('获取视频详情失败:', error)
+    return {
+      success: false,
+      message: '获取视频详情失败',
+      error: error.message
+    }
+  }
+}
+
+// 更新视频观看次数
+async function updateVideoViewCount({ videoId }) {
+  try {
+    if (!videoId) {
+      return { success: false, message: '视频ID不能为空' }
+    }
+    
+    // 支持通过video_id或id更新
+    let sql, params
+    if (isNaN(videoId)) {
+      sql = 'UPDATE videos SET view_count = view_count + 1 WHERE video_id = ?'
+      params = [videoId]
+    } else {
+      sql = 'UPDATE videos SET view_count = view_count + 1 WHERE id = ?'
+      params = [parseInt(videoId)]
+    }
+    
+    await pool.query(sql, params)
+    
+    return { success: true }
+  } catch (error) {
+    console.error('更新视频观看次数失败:', error)
+    return {
+      success: false,
+      message: '更新视频观看次数失败',
       error: error.message
     }
   }

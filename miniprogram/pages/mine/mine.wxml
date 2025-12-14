@@ -1,9 +1,7 @@
 <view class="container">
-  <!-- 背景图片 -->
-  <image class="background-image" src="cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj1.jpg" mode="aspectFill"></image>
   <!-- 顶部用户信息区域：根据登录态显示不同状态 -->
-  <view class="profile-card" style="background-image: url('{{profileBackground}}');">
-    <view class="profile-overlay"></view>
+  <view class="profile-card" style="{{profileCardStyle}}">
+    <view class="profile-overlay {{profileBackgroundType === 'image' ? 'image-overlay' : ''}}"></view>
     <view class="profile-content">
       <view class="avatar-wrapper" bindtap="{{isLoggedIn ? 'changeAvatar' : 'login'}}">
         <image class="avatar" src="{{userInfo.avatar_url || 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/tx1.jpg'}}" mode="aspectFill" />
@@ -173,15 +171,27 @@
   <view class="background-picker-mask {{showBackgroundPicker ? 'show' : ''}}" bindtap="closeBackgroundPicker">
     <view class="background-picker" catchtap="stopPropagation">
       <view class="picker-title">选择名片背景</view>
-      <view class="picker-grid">
-        <view class="picker-item {{profileBackground === item ? 'selected' : ''}}" wx:for="{{backgroundOptions}}" wx:key="item" data-url="{{item}}" bindtap="selectBackground">
+      <view class="picker-tabs">
+        <view class="picker-tab {{currentTab === 'color' ? 'active' : ''}}" bindtap="switchTab" data-tab="color">颜色</view>
+        <view class="picker-tab {{currentTab === 'image' ? 'active' : ''}}" bindtap="switchTab" data-tab="image">图片</view>
+      </view>
+      <!-- 颜色选择 -->
+      <view class="picker-grid" wx:if="{{currentTab === 'color'}}">
+        <view class="picker-item color-item {{profileBackground === item && profileBackgroundType === 'color' ? 'selected' : ''}}" wx:for="{{backgroundColorOptions}}" wx:key="index" data-value="{{item}}" data-type="color" bindtap="selectBackground">
+          <view class="color-preview" style="background: {{item}};"></view>
+          <view class="picker-check" wx:if="{{profileBackground === item && profileBackgroundType === 'color'}}">✓</view>
+        </view>
+      </view>
+      <!-- 图片选择 -->
+      <view class="picker-grid" wx:if="{{currentTab === 'image'}}">
+        <view class="picker-item {{profileBackground === item && profileBackgroundType === 'image' ? 'selected' : ''}}" wx:for="{{backgroundImageOptions}}" wx:key="index" data-value="{{item}}" data-type="image" bindtap="selectBackground">
           <image src="{{item}}" mode="aspectFill"></image>
-          <view class="picker-check" wx:if="{{profileBackground === item}}">✓</view>
+          <view class="picker-check" wx:if="{{profileBackground === item && profileBackgroundType === 'image'}}">✓</view>
         </view>
       </view>
       <view class="picker-actions">
-        <button class="picker-btn" bindtap="uploadBackground">上传照片</button>
-        <button class="picker-btn secondary" bindtap="useRandomBackground">随机一张</button>
+        <button class="picker-btn" bindtap="uploadBackground" wx:if="{{currentTab === 'image'}}">上传照片</button>
+        <button class="picker-btn secondary" bindtap="useRandomBackground" wx:if="{{currentTab === 'color'}}">随机颜色</button>
       </view>
       <button class="picker-close" bindtap="closeBackgroundPicker">完成</button>
     </view>

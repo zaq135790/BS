@@ -28,6 +28,8 @@ async function ensureTables() {
       user_id INT NOT NULL,
       content TEXT NOT NULL,
       images JSON NULL,
+      location VARCHAR(255) NULL,
+      insect_name VARCHAR(128) NULL,
       like_count INT DEFAULT 0,
       comment_count INT DEFAULT 0,
       view_count INT DEFAULT 0,
@@ -37,9 +39,36 @@ async function ensureTables() {
       INDEX idx_user_id (user_id),
       INDEX idx_status (status),
       INDEX idx_created_at (created_at),
-      INDEX idx_like_count (like_count)
+      INDEX idx_like_count (like_count),
+      INDEX idx_location (location),
+      INDEX idx_insect_name (insect_name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `)
+  
+  // 确保表结构完整（检查并添加缺失的字段）
+  try {
+    // 检查是否存在 location 字段
+    const [locationCheck] = await pool.query(
+      'SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=?',
+      [dbConfig.database, 'posts', 'location']
+    )
+    if (locationCheck[0].cnt === 0) {
+      await pool.query('ALTER TABLE posts ADD COLUMN location VARCHAR(255) NULL AFTER images')
+      console.log('Added column location to posts')
+    }
+    
+    // 检查是否存在 insect_name 字段
+    const [insectNameCheck] = await pool.query(
+      'SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND COLUMN_NAME=?',
+      [dbConfig.database, 'posts', 'insect_name']
+    )
+    if (insectNameCheck[0].cnt === 0) {
+      await pool.query('ALTER TABLE posts ADD COLUMN insect_name VARCHAR(128) NULL AFTER location')
+      console.log('Added column insect_name to posts')
+    }
+  } catch (e) {
+    console.log('ensureTableColumns skip: posts', e.message)
+  }
 
   // 创建帖子浏览记录表
   await pool.query(`
@@ -120,15 +149,15 @@ exports.main = async (event, context) => {
 }
 
 // 创建帖子
-async function createPost({ userId, content, images = [] }) {
+async function createPost({ userId, content, images = [], location = null, insectName = null }) {
   try {
     const imagesJson = JSON.stringify(images || [])
     const now = new Date()
     
     const [result] = await pool.query(
-      `INSERT INTO posts (user_id, content, images, like_count, comment_count, view_count, status, created_at, updated_at)
-       VALUES (?, ?, ?, 0, 0, 0, 'published', ?, ?)`,
-      [userId, content, imagesJson, now, now]
+      `INSERT INTO posts (user_id, content, images, location, insect_name, like_count, comment_count, view_count, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 0, 0, 0, 'published', ?, ?)`,
+      [userId, content, imagesJson, location, insectName, now, now]
     )
     
     return { success: true, data: { postId: result.insertId } }
@@ -193,6 +222,8 @@ async function getPostList({ page = 1, pageSize = 10, sort = 'latest' }) {
       userId: post.user_id,
       content: post.content,
       images: post.images ? (typeof post.images === 'string' ? JSON.parse(post.images) : post.images) : [],
+      location: post.location || '',
+      insectName: post.insect_name || '',
       likeCount: post.like_count,
       commentCount: post.comment_count,
       viewCount: post.view_count,
@@ -231,19 +262,46 @@ async function getPostDetail({ postId, userId }) {
       return { success: false, message: '帖子ID不能为空' }
     }
     
-    // 增加浏览记录
+    // 增加浏览记录（避免重复记录）
+    let viewAdded = false
     if (userId) {
-      await pool.query(
-        'INSERT INTO post_views (post_id, user_id, view_time) VALUES (?, ?, NOW(3))',
-        [postId, userId]
-      )
+      try {
+        // 检查是否已有浏览记录（同一用户同一帖子只记录一次）
+        const [existingView] = await pool.query(
+          'SELECT id FROM post_views WHERE post_id = ? AND user_id = ? LIMIT 1',
+          [postId, userId]
+        )
+        if (existingView.length === 0) {
+          await pool.query(
+            'INSERT INTO post_views (post_id, user_id, view_time) VALUES (?, ?, NOW(3))',
+            [postId, userId]
+          )
+          viewAdded = true
+        }
+      } catch (viewError) {
+        console.error('记录浏览失败:', viewError)
+        // 浏览记录失败不影响主流程
+      }
+    } else {
+      // 匿名浏览也记录（每次访问都记录）
+      try {
+        await pool.query(
+          'INSERT INTO post_views (post_id, user_id, view_time) VALUES (?, NULL, NOW(3))',
+          [postId]
+        )
+        viewAdded = true
+      } catch (viewError) {
+        console.error('记录匿名浏览失败:', viewError)
+      }
     }
     
-    // 更新浏览数
-    await pool.query(
-      'UPDATE posts SET view_count = view_count + 1 WHERE id = ?',
-      [postId]
-    )
+    // 更新浏览数（使用实际浏览记录数，更准确）
+    if (viewAdded) {
+      await pool.query(
+        'UPDATE posts SET view_count = (SELECT COUNT(*) FROM post_views WHERE post_id = ?) WHERE id = ?',
+        [postId, postId]
+      )
+    }
     
     // 获取帖子详情
     const [postRows] = await pool.query('SELECT * FROM posts WHERE id = ?', [postId])
@@ -261,12 +319,12 @@ async function getPostDetail({ postId, userId }) {
       avatarUrl: userRows[0].avatar_url || ''
     } : { nickName: '未知用户' }
     
-    // 获取评论
+    // 获取评论（按时间正序，最新的在最后）
     const [comments] = await pool.query(
       `SELECT * FROM comments 
        WHERE post_id = ? AND status = 'published' 
-       ORDER BY created_at DESC 
-       LIMIT 50`,
+       ORDER BY created_at ASC 
+       LIMIT 100`,
       [postId]
     )
     
@@ -291,17 +349,29 @@ async function getPostDetail({ postId, userId }) {
       return map
     }, {})
     
-    // 组合评论数据
-    const commentList = comments.map(comment => ({
-      _id: comment.id,
-      userId: comment.user_id,
-      postId: comment.post_id,
-      content: comment.content,
-      replyTo: comment.reply_to,
-      status: comment.status,
-      createTime: comment.created_at,
-      user: commentUserMap[comment.user_id] || { nickName: '未知用户' }
-    }))
+    // 组合评论数据（包含回复的用户信息）
+    const commentList = comments.map(comment => {
+      let replyToUser = null;
+      if (comment.reply_to) {
+        // 查找被回复的评论
+        const repliedComment = comments.find(c => c.id === comment.reply_to);
+        if (repliedComment) {
+          replyToUser = commentUserMap[repliedComment.user_id] || { nickName: '未知用户' };
+        }
+      }
+      
+      return {
+        _id: comment.id,
+        userId: comment.user_id,
+        postId: comment.post_id,
+        content: comment.content,
+        replyTo: comment.reply_to,
+        replyToNickname: replyToUser?.nickName || null,
+        status: comment.status,
+        createTime: comment.created_at,
+        user: commentUserMap[comment.user_id] || { nickName: '未知用户' }
+      };
+    })
     
     // 检查当前用户是否点赞
     let isLiked = false
@@ -320,9 +390,11 @@ async function getPostDetail({ postId, userId }) {
         userId: post.user_id,
         content: post.content,
         images: post.images ? (typeof post.images === 'string' ? JSON.parse(post.images) : post.images) : [],
+        location: post.location || '',
+        insectName: post.insect_name || '',
         likeCount: post.like_count,
         commentCount: post.comment_count,
-        viewCount: post.view_count + 1, // 已更新
+        viewCount: post.view_count, // 已更新
         status: post.status,
         createTime: post.created_at,
         updateTime: post.updated_at,

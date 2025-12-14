@@ -1,6 +1,9 @@
 {
-  "timeout": 20,
-  "memorySize": 256,
+  "timeout": 60,
+  "memorySize": 512,
   "runtime": "Nodejs14.18"
 }
+
+
+
 

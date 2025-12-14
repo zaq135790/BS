@@ -10,7 +10,13 @@
     <!-- 帖子内容 -->
     <view class="post-card">
       <view class="post-header">
-        <image class="user-avatar" src="{{post.avatar}}" mode="aspectFill"></image>
+        <image 
+          class="user-avatar" 
+          src="{{post.avatar}}" 
+          mode="aspectFill"
+          binderror="onImageError"
+          data-type="avatar"
+        ></image>
         <view class="user-info">
           <text class="user-name">{{post.nickname}}</text>
           <text class="post-time">{{post.createTime}}</text>
@@ -25,8 +31,17 @@
         <text class="content-text">{{post.content}}</text>
       </view>
 
-      <view wx:if="{{post.imageUrl}}" class="post-image">
-        <image class="content-image" src="{{post.imageUrl}}" mode="aspectFit"></image>
+      <view wx:if="{{post.images && post.images.length > 0}}" class="post-images">
+        <image 
+          wx:for="{{post.images}}" 
+          wx:key="index"
+          class="content-image {{post.images.length === 1 ? 'single' : ''}}"
+          src="{{item}}" 
+          mode="{{post.images.length === 1 ? 'aspectFit' : 'aspectFill'}}"
+          bindtap="previewImage"
+          data-url="{{item}}"
+          data-urls="{{post.images}}"
+        ></image>
       </view>
 
       <view class="post-stats">
@@ -60,13 +75,22 @@
 
       <view wx:else class="comments-list">
         <view wx:for="{{comments}}" wx:key="id" class="comment-item">
-          <image class="comment-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+          <image 
+            class="comment-avatar" 
+            src="{{item.avatar}}" 
+            mode="aspectFill"
+            binderror="onImageError"
+            data-type="avatar"
+          ></image>
           <view class="comment-content">
             <view class="comment-header">
               <text class="comment-name">{{item.nickname}}</text>
               <text class="comment-time">{{item.createTime}}</text>
             </view>
             <text class="comment-text">{{item.content}}</text>
+            <view wx:if="{{item.replyTo}}" class="reply-info">
+              <text class="reply-text">回复 {{item.replyToNickname || '评论'}}</text>
+            </view>
           </view>
         </view>
       </view>

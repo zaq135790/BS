@@ -16,7 +16,15 @@ Page({
   },
 
   onReady() {
-    this.videoCtx = wx.createVideoContext('video-player');
+    // 延迟创建视频上下文，确保video组件已渲染
+    setTimeout(() => {
+      try {
+        this.videoCtx = wx.createVideoContext('video-player');
+        console.log('视频上下文创建成功');
+      } catch (error) {
+        console.error('创建视频上下文失败:', error);
+      }
+    }, 100);
   },
 
   async onLoad(options) {
@@ -33,7 +41,27 @@ Page({
       const result = await app.getVideoById(this.data.videoId);
       
       if (result.success && result.data) {
-        const hydrated = await this.hydrateFileUrls(result.data);
+        const videoData = result.data;
+        // 处理duration字段：优先使用duration_seconds，如果没有则使用duration
+        if (!videoData.duration_seconds && videoData.duration) {
+          // 如果duration是字符串格式（如"02:34"），转换为秒数
+          if (typeof videoData.duration === 'string' && videoData.duration.includes(':')) {
+            const parts = videoData.duration.split(':');
+            videoData.duration_seconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+          } else {
+            videoData.duration_seconds = parseInt(videoData.duration) || 0;
+          }
+        }
+        // 确保有duration字段用于显示
+        if (!videoData.duration && videoData.duration_seconds) {
+          const minutes = Math.floor(videoData.duration_seconds / 60);
+          const seconds = videoData.duration_seconds % 60;
+          videoData.duration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        // 映射id字段
+        videoData.id = videoData.video_id || videoData.id;
+        
+        const hydrated = await this.hydrateFileUrls(videoData);
         this.setData({
           videoInfo: hydrated,
           loading: false
@@ -41,7 +69,8 @@ Page({
         
         // 更新观看次数
         this.updateViewCount();
-        this.updateRelatedVideos();
+        // 从数据库获取相关视频推荐
+        await this.loadRelatedVideos();
         // 保存观看记录
         this.saveWatchHistory();
       } else {
@@ -70,7 +99,7 @@ Page({
 
   // 静态视频数据（与 theater 页一致）
   getStaticVideos() {
-    const base = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/vidoes';
+    const base = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/videos';
     const makeTitle = (name) => `了不起的小虫——${name}`;
     const dbmfTitle = '蜜蜂嗡嗡的小趣事';
     const dbyhcTitle = '萤火虫点点的困惑';
@@ -109,7 +138,61 @@ Page({
     );
   },
 
-  // 生成相关推荐（与当前不同的 3 个）
+  // 从数据库加载相关视频推荐
+  async loadRelatedVideos() {
+    const app = getApp();
+    
+    try {
+      if (!this.data.videoInfo) return;
+      
+      // 获取同分类的其他视频
+      const category = this.data.videoInfo.category || '其他';
+      const result = await app.getVideos(null, category, 1, 10);
+      
+      if (result.success && result.data && result.data.list) {
+        // 过滤掉当前视频，并处理duration字段
+        const related = result.data.list
+          .filter(v => String(v.video_id || v.id) !== String(this.data.videoId))
+          .slice(0, 3)
+          .map(v => {
+            // 处理duration字段
+            if (!v.duration_seconds && v.duration) {
+              if (typeof v.duration === 'string' && v.duration.includes(':')) {
+                const parts = v.duration.split(':');
+                v.duration_seconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+              } else {
+                v.duration_seconds = parseInt(v.duration) || 0;
+              }
+            }
+            if (!v.duration && v.duration_seconds) {
+              const minutes = Math.floor(v.duration_seconds / 60);
+              const seconds = v.duration_seconds % 60;
+              v.duration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            v.id = v.video_id || v.id;
+            return v;
+          });
+        
+        // 转换云存储URL
+        const hydrated = await Promise.all(
+          related.map(v => this.hydrateFileUrls(v))
+        );
+        
+        this.setData({
+          relatedVideos: hydrated
+        });
+      } else {
+        // 如果数据库查询失败，使用静态数据兜底
+        this.updateRelatedVideos();
+      }
+    } catch (error) {
+      console.error('加载相关视频失败:', error);
+      // 使用静态数据兜底
+      this.updateRelatedVideos();
+    }
+  },
+
+  // 生成相关推荐（与当前不同的 3 个）- 静态数据兜底
   updateRelatedVideos() {
     const list = this.getStaticVideos().filter(item => String(item.id) !== String(this.data.videoId));
     this.setData({
@@ -143,8 +226,32 @@ Page({
 
   // 更新观看次数
   async updateViewCount() {
-    // 这里可以调用云函数更新观看次数
-    // 暂时跳过实现
+    const app = getApp();
+    
+    try {
+      const videoId = this.data.videoInfo?.video_id || this.data.videoInfo?.id || this.data.videoId;
+      if (!videoId) return;
+      
+      const result = await wx.cloud.callFunction({
+        name: 'content-service',
+        data: {
+          action: 'updateVideoViewCount',
+          data: {
+            videoId: videoId
+          }
+        }
+      });
+      
+      if (result.result && result.result.success) {
+        // 更新本地显示的观看次数
+        const currentCount = this.data.videoInfo?.view_count || 0;
+        this.setData({
+          'videoInfo.view_count': currentCount + 1
+        });
+      }
+    } catch (error) {
+      console.error('更新观看次数失败:', error);
+    }
   },
 
   // 视频双击播放/暂停
@@ -172,47 +279,40 @@ Page({
     }
   },
 
-  // 全屏切换
-  toggleFullscreen() {
-    const ctx = this.videoCtx || wx.createVideoContext('video-player');
-    if (!ctx || this.data.fsBusy) return;
-
-    // 如果已在全屏，直接退出
-    if (this.data.fullscreen) {
-      this.setData({ fsBusy: true });
-      ctx.exitFullScreen({
-        complete: () => this.setData({ fsBusy: false })
-      });
-      return;
-    }
-
-    // 进入全屏：先确保正在播放，再按 无方向 / 0 / 90 度双保险尝试
-    this.setData({ fsBusy: true });
-    ctx.play();
-
-    const tryRequest = (direction) =>
-      new Promise((resolve) => {
-        ctx.requestFullScreen({
-          direction,
-          success: () => resolve(true),
-          fail: () => resolve(false)
-        });
-      });
-
-    (async () => {
-      // iOS 部分机型对 direction 兼容性差，先尝试不传 direction
-      const okNoDir = await tryRequest(undefined);
-      const okDefault = okNoDir ? true : await tryRequest(0);
-      const okFallback = okDefault ? true : await tryRequest(90);
-      if (!okFallback) wx.showToast({ title: '全屏未响应，请再次点击', icon: 'none' });
-      this.setData({ fsBusy: false });
-    })();
-  },
+  // 全屏切换 - 已移除，完全使用视频组件自带的全屏按钮
+  // 视频组件已设置 show-fullscreen-btn="{{true}}"，用户点击视频控件上的全屏按钮即可
 
   onFullscreenChange(e) {
-    const isFull = e.detail.fullScreen;
-    // 事件里兼容性最好，再次解锁状态
-    this.setData({ fullscreen: isFull, fsBusy: false });
+    try {
+      const isFull = e.detail.fullScreen || e.detail.fullscreen || false;
+      const currentFullscreen = this.data.fullscreen;
+      
+      // 如果状态没有变化，忽略（防止重复触发）
+      if (isFull === currentFullscreen) {
+        return;
+      }
+      
+      // 清除之前的防抖定时器
+      if (this.fullscreenChangeTimer) {
+        clearTimeout(this.fullscreenChangeTimer);
+      }
+      
+      // 使用防抖，避免快速切换导致的状态抖动
+      this.fullscreenChangeTimer = setTimeout(() => {
+        // 再次检查状态，确保真的需要更新
+        const finalIsFull = e.detail.fullScreen || e.detail.fullscreen || false;
+        if (finalIsFull !== this.data.fullscreen) {
+          this.setData({ 
+            fullscreen: finalIsFull, 
+            fsBusy: false 
+          });
+        }
+        this.fullscreenChangeTimer = null;
+      }, 200); // 200ms 防抖，更稳定
+    } catch (error) {
+      console.error('onFullscreenChange 异常:', error);
+      this.setData({ fsBusy: false });
+    }
   },
 
   // 视频播放事件
@@ -264,9 +364,19 @@ Page({
     wx.navigateBack({ delta: 1 });
   },
 
-  // 格式化时间
-  formatTime(seconds) {
-    if (!seconds) return '0:00';
+  // 格式化时间（支持秒数或字符串格式）
+  formatTime(time) {
+    if (!time) return '0:00';
+    
+    let seconds = 0;
+    
+    // 如果是字符串格式（如"02:34"），转换为秒数
+    if (typeof time === 'string' && time.includes(':')) {
+      const parts = time.split(':');
+      seconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    } else {
+      seconds = parseInt(time) || 0;
+    }
     
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
@@ -336,6 +446,14 @@ Page({
       wx.setStorageSync(historyKey, history);
     } catch (error) {
       console.error('保存观看记录失败:', error);
+    }
+  },
+
+  onUnload() {
+    // 清理防抖定时器
+    if (this.fullscreenChangeTimer) {
+      clearTimeout(this.fullscreenChangeTimer);
+      this.fullscreenChangeTimer = null;
     }
   }
 });

@@ -73,6 +73,8 @@ async function ensureUserColumns() {
     { name: 'city', def: 'VARCHAR(64) NULL' },
     { name: 'login_count', def: 'INT DEFAULT 0' },
     { name: 'last_login_at', def: 'DATETIME NULL' },
+    { name: 'profile_background', def: 'VARCHAR(500) NULL' },
+    { name: 'profile_background_type', def: "VARCHAR(32) DEFAULT 'color'" },
     { name: 'created_at', def: 'DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3)' },
     { name: 'updated_at', def: 'DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)' }
   ]
@@ -105,7 +107,9 @@ function mapUser(row) {
     province: row.province,
     city: row.city,
     loginCount: row.login_count || 0,
-    lastLoginTime: row.last_login_at || null
+    lastLoginTime: row.last_login_at || null,
+    profile_background: row.profile_background || null,
+    profile_background_type: row.profile_background_type || 'color'
   }
 }
 
@@ -276,7 +280,7 @@ async function updateUserInfo({ userId, openid, userInfo }) {
 
   const fields = []
   const values = []
-  const allowed = ['nickname', 'avatar_url', 'user_type', 'gender', 'country', 'province', 'city']
+  const allowed = ['nickname', 'avatar_url', 'user_type', 'gender', 'country', 'province', 'city', 'profile_background', 'profile_background_type']
 
   allowed.forEach((key) => {
     if (userInfo && userInfo[key] !== undefined) {
