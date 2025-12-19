@@ -70,8 +70,8 @@
     <view class="section-header">
       <text class="section-title">观看记录</text>
       <text class="section-subtitle">{{isLoggedIn ? (userInfo.user_type === 'parent' ? '家长' : '儿童') : '访客'}}身份下的观看记录</text>
-      <!-- 儿童身份：显示管理按钮（即使没有记录也显示） -->
-      <view wx:if="{{isLoggedIn && userInfo.user_type === 'child'}}" class="manage-btn" bindtap="goToWatchHistoryManage">
+      <!-- 儿童/家长身份都显示管理按钮 -->
+      <view wx:if="{{isLoggedIn && (userInfo.user_type === 'child' || userInfo.user_type === 'parent')}}" class="manage-btn" bindtap="goToWatchHistoryManage">
         <text>管理</text>
       </view>
     </view>
@@ -93,6 +93,36 @@
     <view class="empty-browse" wx:else>
       <text class="empty-icon">🎬</text>
       <text class="empty-text">还没有观看记录，快去虫虫小剧场看看吧！</text>
+    </view>
+  </view>
+
+  <!-- 收藏视频 -->
+  <view class="browse-history-section">
+    <view class="section-header">
+      <text class="section-title">收藏视频</text>
+      <text class="section-subtitle">{{isLoggedIn ? (userInfo.user_type === 'parent' ? '家长' : '儿童') : '访客'}}身份下的收藏视频</text>
+      <view wx:if="{{isLoggedIn && (userInfo.user_type === 'child' || userInfo.user_type === 'parent')}}" class="manage-btn" bindtap="goToFavoriteHistoryManage">
+        <text>管理</text>
+      </view>
+    </view>
+    <view class="browse-stats">
+      <view class="browse-stat-item">
+        <text class="stat-number">{{favoriteVideos.length}}</text>
+        <text class="stat-label">已收藏视频</text>
+      </view>
+    </view>
+    <view class="browse-list" wx:if="{{favoriteVideos.length > 0}}">
+      <view wx:for="{{favoriteVideos}}" wx:key="videoId" class="browse-item" bindtap="goToVideoDetail" data-id="{{item.videoId}}">
+        <image class="browse-image" src="{{item.thumbnail}}" mode="aspectFill" />
+        <view class="browse-info">
+          <text class="browse-name">{{item.title}}</text>
+          <text class="browse-time">{{formatWatchTime(item.favoriteTime)}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="empty-browse" wx:else>
+      <text class="empty-icon">⭐</text>
+      <text class="empty-text">还没有收藏视频，快去虫虫小剧场收藏喜欢的视频吧！</text>
     </view>
   </view>
 

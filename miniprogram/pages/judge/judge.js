@@ -22,14 +22,17 @@ Page({
     
     // 当前题目
     currentInsect: null,
-    currentInsectName: '', // 当前昆虫名字（用于输入）
+    currentInsectName: '', // 当前昆虫名字（用于记录选择）
     showInsectName: false, // 是否显示昆虫名字（提示后）
-    nameWrongCount: 0, // 名字错误次数（第一次不算，第二次才算错）
-    showCorrectAnswer: false, // 是否显示正确答案（第二次错误后显示）
+    nameWrongCount: 0, // 名字错误次数（新的规则中：0=答对，1=答错，2=使用提示跳过）
+    showCorrectAnswer: false, // 是否显示正确答案（用于提示）
+    nameOptions: [], // 第一步三个名字选项
+    selectedName: '', // 当前选中的名字
+    usedHint: false, // 当前题目是否使用了提示跳过
     
     // 提示相关
     hintClicked: false, // 是否点击过提示
-    hintClickTime: 0, // 提示点击时间
+    hintClickTime: 0, // 提示点击时间（保留字段，便于以后扩展）
     hintMessage: '', // 提示消息
     
     // 答题相关
@@ -46,14 +49,16 @@ Page({
     
     // 鼓励话语
     thinkingMessages: [
-      '小朋友，好好思考一下，看看图片和口诀，你能猜出来的！',
-      '再仔细看看，图片和口诀会给你提示的哦～',
-      '不要着急，慢慢想，你一定可以的！'
+      '再仔细看看图片里的小细节，你一定能发现线索！',
+      '别着急，深呼吸一下，慢慢回想刚才学过的昆虫名字～',
+      '可以把口诀轻声读一遍，说不定灵感就来了！',
+      '看看它的颜色、形状和腿的样子，和记住的昆虫对一对～',
+      '小小科学家，再想一想，这次一定可以选对的！'
     ],
     wrongMessages: [
-      '没关系，再好好想想，看看图片和口诀的提示！',
-      '加油！仔细看看图片和口诀，你一定能猜对的！',
-      '别灰心，再想想，图片和口诀会帮助你的！'
+      '每一次尝试都是进步的一小步！',
+      '连大科学家也会答错题，坚持下去最重要！',
+      '你已经很棒了，等会儿我们再一起挑战新的昆虫吧～'
     ]
   },
 
@@ -247,9 +252,11 @@ Page({
       };
     });
     
+    const firstInsect = questions[0];
     this.setData({
       questions: questions,
-      currentInsect: questions[0],
+      currentInsect: firstInsect,
+      nameOptions: this.generateNameOptions(firstInsect.name),
       loading: false
     });
   },
@@ -262,6 +269,16 @@ Page({
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
+  },
+
+  // 为当前昆虫生成三个名字选项（1个正确 + 2个随机错误）
+  generateNameOptions(correctName) {
+    const allInsects = [...beneficialInsects, ...harmfulInsects];
+    const allNames = allInsects.map(item => item.name);
+    const otherNames = allNames.filter(name => name !== correctName);
+    const wrongNames = this.shuffleArray(otherNames).slice(0, 2);
+    const options = [correctName, ...wrongNames];
+    return this.shuffleArray(options);
   },
 
   // 开始游戏
@@ -286,7 +303,10 @@ Page({
       userAnswer: null,
       showResult: false,
       isCorrect: false,
-      progressPercent: 0
+      progressPercent: 0,
+      nameOptions: this.generateNameOptions(this.data.questions[0].name),
+      selectedName: '',
+      usedHint: false
     });
     // 开始播放BGM
     this.playBGM();
@@ -305,53 +325,40 @@ Page({
 
   // 点击提示按钮
   onHintClick() {
-    const now = Date.now();
-    const lastClickTime = this.data.hintClickTime;
-    
-    if (!this.data.hintClicked) {
-      // 第一次点击：显示鼓励思考的话
-      const messages = this.data.thinkingMessages;
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      
-      this.setData({
-        hintClicked: true,
-        hintClickTime: now,
-        hintMessage: randomMessage
-      });
-      
-      wx.showToast({
-        title: randomMessage,
-        icon: 'none',
-        duration: 2000
-      });
-    } else if (now - lastClickTime <= 3000) {
-      // 3秒内再次点击：显示正确答案
-      this.setData({
-        showInsectName: true,
-        hintMessage: `正确答案是：${this.data.currentInsect.name}`
-      });
-      
-      wx.showToast({
-        title: `正确答案：${this.data.currentInsect.name}`,
-        icon: 'none',
-        duration: 2000
-      });
-    } else {
-      // 超过3秒，重新开始计时
-      const messages = this.data.thinkingMessages;
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      
-      this.setData({
-        hintClickTime: now,
-        hintMessage: randomMessage
-      });
-      
-      wx.showToast({
-        title: randomMessage,
-        icon: 'none',
-        duration: 2000
-      });
+    // 新规则：提示按钮直接显示正确答案，并跳过"猜名字"步骤，
+    // 点击"知道了"后进入第二步（判断益虫还是害虫）
+    if (this.data.currentStep !== 1) {
+      return;
     }
+
+    const correctName = this.data.currentInsect?.name || '';
+
+    this.setData({
+      hintClicked: true,
+      showInsectName: true,
+      showCorrectAnswer: true,
+      hintMessage: `正确答案是：${correctName}`,
+      usedHint: true,
+      nameWrongCount: 2, // 记录为使用提示跳过
+      currentInsectName: correctName,
+      selectedName: correctName
+    });
+
+    wx.showModal({
+      title: '小提示',
+      content: `这只昆虫的名字是「${correctName}」。\n我们先记住它，一起来判断它是益虫还是害虫吧！`,
+      showCancel: false,
+      confirmText: '知道了',
+      success: () => {
+        // 直接进入第二步
+        this.setData({
+          currentStep: 2,
+          showResult: false,
+          userAnswer: null
+        });
+        this.updateProgress();
+      }
+    });
   },
 
   // 输入昆虫名字
@@ -363,34 +370,37 @@ Page({
 
   // 提交名字答案
   submitNameAnswer() {
-    const userAnswer = this.data.currentInsectName.trim();
+    // 三选一模式：从选中的按钮中读取答案
+    const userAnswer = this.data.selectedName || this.data.currentInsectName.trim();
     const correctAnswer = this.data.currentInsect.name;
     const isCorrect = userAnswer === correctAnswer;
+    const currentWrongCount = this.data.nameWrongCount;
     
     if (!userAnswer) {
       wx.showToast({
-        title: '请输入昆虫名字',
+        title: '请先选择一个昆虫名字',
         icon: 'none'
       });
       return;
     }
     
     if (isCorrect) {
-      // 答对了，进入第二步
+      // 回答正确，正常进入第二步
       this.setData({
         isCorrect: true,
         showResult: true,
         userAnswer: userAnswer,
-        nameWrongCount: 0 // 重置错误次数
+        currentInsectName: userAnswer,
+        nameWrongCount: 0,
+        showCorrectAnswer: false
       });
-      
+
       wx.showToast({
         title: '回答正确！',
         icon: 'success',
         duration: 1500
       });
-      
-      // 延迟进入第二步
+
       setTimeout(() => {
         this.setData({
           currentStep: 2,
@@ -399,71 +409,95 @@ Page({
           hintClicked: false,
           hintClickTime: 0,
           hintMessage: '',
-          nameWrongCount: 0,
-          showCorrectAnswer: false
+          showCorrectAnswer: false,
+          selectedName: ''
         });
         this.updateProgress();
       }, 1500);
     } else {
-      // 答错了
-      const wrongCount = this.data.nameWrongCount + 1;
-      const messages = this.data.wrongMessages;
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      
-      if (wrongCount === 1) {
-        // 第一次错误，不算错，只提示，不显示正确答案
+      // 回答错误，给两次机会
+      if (currentWrongCount === 0) {
+        // 第一次答错：给出鼓励，不显示正确答案，允许再选一次
+        const messages = this.data.thinkingMessages || [];
+        const randomMessage = messages.length
+          ? messages[Math.floor(Math.random() * messages.length)]
+          : '再好好想一想，你可以的！';
+
         this.setData({
           isCorrect: false,
           showResult: true,
           userAnswer: userAnswer,
-          nameWrongCount: wrongCount,
+          currentInsectName: userAnswer,
+          nameWrongCount: 1,
           showCorrectAnswer: false
         });
-        
+
         wx.showToast({
           title: randomMessage,
           icon: 'none',
           duration: 2000
         });
-        
-        // 清空输入框，让用户重新输入
+
+        // 过一会儿收起结果提示，让儿童重新选择
         setTimeout(() => {
           this.setData({
             showResult: false,
+            userAnswer: null,
+            selectedName: '',
             currentInsectName: ''
           });
         }, 2000);
       } else {
-        // 第二次错误，算错，显示正确答案，然后自动跳转到第二步
+        // 第二次答错：简洁提示 + 正确答案
+        const contentLines = [
+          '别灰心，这一题有点难。',
+          '',
+          `正确答案是：${correctAnswer}`,
+          '',
+          '记住它的名字，我们一起看看它是益虫还是害虫吧。'
+        ];
+
         this.setData({
           isCorrect: false,
           showResult: true,
           userAnswer: userAnswer,
-          nameWrongCount: wrongCount,
-          showCorrectAnswer: true
+          currentInsectName: userAnswer,
+          nameWrongCount: 2,
+          showCorrectAnswer: true,
+          showInsectName: true
         });
-        
-        wx.showToast({
-          title: '正确答案已显示，即将进入下一题',
-          icon: 'none',
-          duration: 2000
+
+        wx.showModal({
+          title: '别灰心',
+          content: contentLines.join('\n'),
+          showCancel: false,
+          confirmText: '知道了',
+          success: () => {
+            // 进入当前题的第二步（判断益虫/害虫）
+            this.setData({
+              currentStep: 2,
+              showResult: false,
+              userAnswer: null,
+              hintClicked: false,
+              hintClickTime: 0,
+              hintMessage: '',
+              // 保留 showCorrectAnswer / showInsectName 状态，仅影响第一步显示
+              selectedName: this.data.selectedName
+            });
+            this.updateProgress();
+          }
         });
-        
-        // 显示正确答案后，延迟跳转到第二步
-        setTimeout(() => {
-          this.setData({
-            currentStep: 2,
-            showResult: false,
-            userAnswer: null,
-            hintClicked: false,
-            hintClickTime: 0,
-            hintMessage: '',
-            showCorrectAnswer: false
-          });
-          this.updateProgress();
-        }, 2500);
       }
     }
+  },
+
+  // 选择名字选项
+  selectNameOption(e) {
+    const answer = e.currentTarget.dataset.answer;
+    this.setData({
+      selectedName: answer,
+      currentInsectName: answer
+    });
   },
 
   // 选择益害答案
@@ -471,18 +505,22 @@ Page({
     if (this.data.showResult) return;
     
     const answer = e.currentTarget.dataset.answer;
-    const typeCorrect = answer === this.data.currentInsect.type;
+    const insectName = this.data.currentInsect?.name;
     
-    // 判断名字是否正确（如果错误次数>=2，则算错）
-    const nameCorrect = this.data.nameWrongCount < 2;
-    const bothCorrect = nameCorrect && typeCorrect;
+    // 为避免类型字段异常，这里重新根据名称判断真实类型
+    const isBeneficialInList = beneficialInsects.some(b => b.name === insectName);
+    const realType = isBeneficialInList ? '益虫' : '害虫';
+    const typeCorrect = answer === realType;
+    
+    // 判断名字是否正确（0=正确；1=选错；2=使用提示跳过）
+    const nameCorrect = this.data.nameWrongCount === 0 && !this.data.usedHint;
     
     // 记录答题
     const record = {
       questionIndex: this.data.currentQuestionIndex + 1,
-      insectName: this.data.currentInsect.name,
-      nameAnswer: this.data.currentInsect.name, // 最终答对的名字
-      nameCorrect: nameCorrect, // 名字是否正确（第一次错误不算，第二次错误才算）
+      insectName: insectName,
+      nameAnswer: this.data.currentInsectName || this.data.currentInsect.name, // 最终显示的名字
+      nameCorrect: nameCorrect, // 名字是否正确
       nameWrongCount: this.data.nameWrongCount, // 记录错误次数
       typeAnswer: answer,
       typeCorrect: typeCorrect,
@@ -490,13 +528,15 @@ Page({
       step2Time: 0
     };
     
+    // 第二步界面只根据益虫/害虫判断对错来显示结果
     this.setData({
       userAnswer: answer,
-      isCorrect: bothCorrect,
+      isCorrect: typeCorrect,
       showResult: true
     });
     
-    if (bothCorrect) {
+    if (typeCorrect && nameCorrect) {
+      // 只有名字和益害都正确时才计分
       this.setData({
         score: this.data.score + 1
       });
@@ -540,7 +580,10 @@ Page({
         hintMessage: '',
         userAnswer: null,
         showResult: false,
-        isCorrect: false
+        isCorrect: false,
+        nameOptions: this.generateNameOptions(this.data.questions[nextIndex].name),
+        selectedName: '',
+        usedHint: false
       });
       this.updateProgress();
     }

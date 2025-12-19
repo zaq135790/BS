@@ -298,6 +298,8 @@
   margin-bottom: 30rpx;
 }
 
+/* 收藏视频区域沿用通用样式，避免过于拥挤或突出 */
+
 .browse-stat-item {
   flex: 1;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);

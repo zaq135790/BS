@@ -8,9 +8,16 @@ Page({
     loading: true,
     refreshing: false,
     stats: {
-      totalGames: 0,
-      correctRate: 0,
-      bestScore: 0
+      judge: {
+        totalGames: 0,
+        correctRate: 0,
+        bestScore: 0
+      },
+      puzzle: {
+        totalGames: 0,
+        correctRate: 0,
+        bestScore: 0
+      }
     },
     timeUpdateTimer: null // 时间更新定时器
   },
@@ -88,22 +95,34 @@ Page({
       const allRecordsResult = await app.getGameRecords(null, 1, 100);
       
       if (allRecordsResult.success) {
-        const records = allRecordsResult.data;
-        const totalGames = records.length;
+        const records = allRecordsResult.data || [];
         
-        // 计算正确率（针对益害判官游戏）
         const judgeRecords = records.filter(r => r.game_type === '益害判官');
-        const correctCount = judgeRecords.filter(r => r.score > 0).length;
-        const correctRate = judgeRecords.length > 0 ? Math.round((correctCount / judgeRecords.length) * 100) : 0;
-        
-        // 计算最高分
-        const bestScore = Math.max(...records.map(r => r.score || 0), 0);
+        const puzzleRecords = records.filter(r => r.game_type === '虫虫拼图');
+
+        // 益害小判官统计
+        const judgeTotal = judgeRecords.length;
+        const judgeCorrectCount = judgeRecords.filter(r => r.score > 0).length;
+        const judgeCorrectRate = judgeTotal > 0 ? Math.round((judgeCorrectCount / judgeTotal) * 100) : 0;
+        const judgeBestScore = judgeTotal > 0 ? Math.max(...judgeRecords.map(r => r.score || 0)) : 0;
+
+        // 虫虫拼图统计（这里用完成局数和最高得分）
+        const puzzleTotal = puzzleRecords.length;
+        const puzzleCorrectRate = puzzleTotal > 0 ? 100 : 0; // 拼图只记录完成局，视为100%完成率
+        const puzzleBestScore = puzzleTotal > 0 ? Math.max(...puzzleRecords.map(r => r.score || 0)) : 0;
         
         this.setData({
           stats: {
-            totalGames,
-            correctRate,
-            bestScore
+            judge: {
+              totalGames: judgeTotal,
+              correctRate: judgeCorrectRate,
+              bestScore: judgeBestScore
+            },
+            puzzle: {
+              totalGames: puzzleTotal,
+              correctRate: puzzleCorrectRate,
+              bestScore: puzzleBestScore
+            }
           }
         });
       }

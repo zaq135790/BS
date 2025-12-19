@@ -224,12 +224,8 @@ Page({
     });
   },
 
-  // 昆虫识别（家长版功能）
+  // 虫虫识别（儿童和家长都可用）
   goToInsectRecognition() {
-    if (this.data.userRole === 'child') {
-      this.showChildReminder('recognition');
-      return;
-    }
     wx.navigateTo({
       url: '/pages/recognition/recognition'
     });

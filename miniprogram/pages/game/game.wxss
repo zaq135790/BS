@@ -175,16 +175,19 @@
 
 .game-tabs {
   display: flex;
-  gap: 10rpx;
-  margin-bottom: 25rpx;
+  gap: 40rpx; /* 增大两个按钮之间的间距 */
+  margin-top: 25rpx;
+  margin-bottom: 1rpx;
+  /* 居中展示两个切换按钮 */
+  justify-content: center;
 }
 
 .tab-btn {
-  padding: 15rpx 25rpx;
+  padding: 20rpx 40rpx;
   background: rgba(76, 175, 80, 0.1);
   color: #666;
   border-radius: 20rpx;
-  font-size: 24rpx;
+  font-size: 30rpx;
   border: none;
   transition: all 0.3s ease;
 }

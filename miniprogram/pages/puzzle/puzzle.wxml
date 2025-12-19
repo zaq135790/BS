@@ -1,7 +1,7 @@
 <!--pages/puzzle/puzzle.wxml-->
 <view class="container">
-  <!-- 加载中 -->
-  <view wx:if="{{loading}}" class="loading">
+  <!-- 首次进入页面的全屏加载，仅在初始化阶段显示 -->
+  <view wx:if="{{initializing}}" class="loading">
     <text>加载中...</text>
   </view>
 
@@ -18,7 +18,7 @@
         <text class="label">选择难度:</text>
         <view class="difficulty-options">
           <button 
-            class="difficulty-btn {{difficulty === '简单' ? 'active' : ''}}"
+            class="difficulty-btn {{difficulty === '简单' ? 'active' : ''}} {{pressedDifficulty === '简单' ? 'pressed' : ''}}"
             bindtap="selectDifficulty"
             data-difficulty="简单"
             disabled="{{loading}}"
@@ -26,7 +26,7 @@
             简单 (2x2)
           </button>
           <button 
-            class="difficulty-btn {{difficulty === '困难' ? 'active' : ''}}"
+            class="difficulty-btn {{difficulty === '困难' ? 'active' : ''}} {{pressedDifficulty === '困难' ? 'pressed' : ''}}"
             bindtap="selectDifficulty"
             data-difficulty="困难"
             disabled="{{loading}}"
@@ -88,12 +88,20 @@
 
   <!-- 游戏结束 -->
   <view wx:elif="{{gameEnded}}" class="end-screen">
-    <view class="title">拼图完成！</view>
-    <view class="final-score">用时: {{formattedTime}}</view>
-    <view class="final-score">得分: {{score}}</view>
-    <view class="buttons">
-      <button class="btn" bindtap="restartGame">再来一局</button>
-      <button class="btn secondary" bindtap="goBack">返回</button>
+    <!-- 背景图片与首页保持一致 -->
+    <image class="end-bg" src="cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/image/bj1.jpg" mode="aspectFill"></image>
+    <view class="end-overlay"></view>
+    <view class="end-content-wrap">
+      <view class="title">拼图完成！</view>
+      <view class="stats-box">
+        <view class="final-score">用时：{{formattedTime}}</view>
+        <view class="final-score">得分：{{score}}</view>
+        <view class="encourage-text">太棒了，小小拼图高手！我们一起去挑战下一只小虫子吧～</view>
+        <view class="buttons">
+          <button class="btn" bindtap="restartGame">再来一局</button>
+          <button class="btn secondary" bindtap="goBack">返回</button>
+        </view>
+      </view>
     </view>
   </view>
 </view>

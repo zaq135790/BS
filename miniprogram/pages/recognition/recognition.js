@@ -7,6 +7,16 @@ Page({
     error: null
   },
 
+  // 清理模型返回中的特殊标记，避免在界面显示
+  stripArtifacts(text = '') {
+    return String(text || '')
+      .replace(/<\s*end_of_[^>]+>/gi, '')
+      .replace(/<\|\s*end_of_[^|>]+?\|>/gi, '')
+      .replace(/<\s*\/?think[^>]*>/gi, '')
+      .replace(/<\|[^|>]+\|>/g, '')
+      .trim();
+  },
+
   onLoad() {
     // 页面加载
   },
@@ -78,13 +88,49 @@ Page({
         }
       });
 
-      console.log('识别结果:', result);
-
-      // 处理返回结果
       if (result.result) {
         if (result.result.success) {
+          const data = result.result.data || {};
+
+          // 添加详细的日志
+          console.log('==== 识别结果详情 ====');
+          console.log('昆虫名称:', data.insectName);
+          console.log('是否害虫:', data.isHarmful);
+          console.log('淘宝链接:', data.taobaoLink);
+          console.log('防治建议:', data.preventionTip);
+          console.log('百科全书长度:', data.encyclopedia?.length);
+          console.log('==== END ====');
+
+          const clean = {
+            insectName: this.stripArtifacts(data.insectName),
+            isHarmful: data.isHarmful || false,
+            encyclopedia: this.stripArtifacts(data.encyclopedia),
+            taobaoLink: data.taobaoLink, // 直接使用，不清理
+            preventionTip: this.stripArtifacts(data.preventionTip)
+          };
+
+          // 强制检查：如果是害虫但淘宝链接为空，设置默认链接
+          if (clean.isHarmful && (!clean.taobaoLink || clean.taobaoLink.trim() === '')) {
+            console.log('⚠️ 检测到害虫但淘宝链接为空，设置默认链接');
+            const safeInsectName = clean.insectName
+              ? clean.insectName.replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '')
+              : '';
+            if (safeInsectName) {
+              const encodedName = encodeURIComponent(safeInsectName + ' 防治');
+              clean.taobaoLink = `https://s.taobao.com/search?q=${encodedName}`;
+              clean.preventionTip =
+                clean.preventionTip ||
+                `建议搜索"${clean.insectName} 防治"购买相关产品。`;
+            }
+          }
+
+          // 再次检查淘宝链接
+          if (clean.isHarmful) {
+            console.log('✅ 最终淘宝链接:', clean.taobaoLink ? '有链接' : '无链接');
+          }
+
           this.setData({
-            result: result.result.data,
+            result: clean,
             recognizing: false
           });
         } else {
@@ -113,6 +159,8 @@ Page({
       result: null,
       error: null
     });
+    // 清空后直接唤起图片选择，让用户无缝继续识别
+    this.chooseImage();
   },
 
   // 跳转到淘宝

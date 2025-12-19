@@ -81,6 +81,9 @@
         <view class="section-title">💡 昆虫小知识</view>
         <view class="section-content knowledge-content">
           <text class="knowledge-text">{{insectData.knowledge}}</text>
+          <button class="audio-btn {{isReading ? 'playing' : ''}}" bindtap="onToggleRead">
+            {{ isReading ? '暂停朗读' : '朗读小知识' }}
+          </button>
         </view>
       </view>
     </block>

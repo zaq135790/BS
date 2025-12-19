@@ -7,15 +7,24 @@ Page({
     videoUrl: '',  // 动画视频URL（后期导入）
     userRole: 'child',  // 当前用户身份
     previewImage: '', // 预览图片URL
-    showImagePreview: false // 是否显示图片预览
+    showImagePreview: false, // 是否显示图片预览
+    audioSrc: 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/mf_yp.mp3',
+    isReading: false,
+    currentInsectId: '',
+    currentInsectName: ''
   },
 
   onLoad(options) {
     // 从options获取昆虫信息（可能是从图鉴页面跳转过来的）
     const insectName = options.name || '';
     const insectId = options.id || '';
+    this.setData({
+      currentInsectId: insectId,
+      currentInsectName: insectName
+    });
     this.loadUserRole();
     this.loadInsectData(insectName, insectId);
+    this.initAudio();
   },
 
   // 加载用户身份
@@ -58,7 +67,7 @@ Page({
       
       if (isParent) {
         // 家长身份：显示科普知识
-        // 生成三张图片（识别要点图片、家庭指引图片、实拍图）
+    // 生成三张图片（识别要点图片、家庭指引图片、实拍图）
         const identifyImage = insect.adultDesc.identifyImage || defaultImg;
         const guideImage = insect.adultDesc.guideImage || defaultImg;
         const realImg = insect.realImg || defaultImg;
@@ -110,7 +119,8 @@ Page({
           knowledge: '让我们一起探索这个有趣的昆虫吧！',
           type: '未知'
         },
-        loading: false
+        loading: false,
+        currentInsectName: this.data.currentInsectName || '未知昆虫'
       });
     }
   },
@@ -191,10 +201,12 @@ Page({
       // 根据用户身份选择图片
       const defaultImg = 'cloud://cloud1-5g6ssvupb26437e4.636c-cloud1-5g6ssvupb26437e4-1382475723/images/bj3.png';
       const imageUrl = userType === 'parent' ? (insect.realImg || defaultImg) : (insect.cartoonImg || defaultImg);
+      const insectId = this.data.currentInsectId || insect.id || insect.name || 'unknown';
+      const insectName = insect.name || this.data.currentInsectName || '未知昆虫';
       
       const browseRecord = {
-        insectId: insect.name,
-        name: insect.name,
+        insectId,
+        name: insectName,
         image: imageUrl,
         browseTime: new Date().toISOString()
       };
@@ -234,5 +246,41 @@ Page({
       path: `/pages/detail/detail?name=${this.data.insectData.name}`,
       imageUrl: this.data.insectData.image
     };
+  },
+
+  // 初始化朗读音频
+  initAudio() {
+    try {
+      this.audioCtx = wx.createInnerAudioContext();
+      this.audioCtx.src = this.data.audioSrc;
+      this.audioCtx.obeyMuteSwitch = true;
+      this.audioCtx.onPlay(() => this.setData({ isReading: true }));
+      this.audioCtx.onPause(() => this.setData({ isReading: false }));
+      this.audioCtx.onStop(() => this.setData({ isReading: false }));
+      this.audioCtx.onEnded(() => this.setData({ isReading: false }));
+    } catch (e) {
+      console.error('初始化朗读音频失败', e);
+    }
+  },
+
+  // 切换朗读 / 暂停
+  onToggleRead() {
+    if (!this.audioCtx) {
+      this.initAudio();
+    }
+    if (!this.audioCtx) return;
+
+    if (this.data.isReading) {
+      this.audioCtx.pause();
+    } else {
+      this.audioCtx.play();
+    }
+  },
+
+  onUnload() {
+    if (this.audioCtx) {
+      this.audioCtx.destroy();
+      this.audioCtx = null;
+    }
   }
 });

@@ -46,21 +46,28 @@
         <text class="rhyme-text">{{currentInsect.rhyme}}</text>
       </view>
       
+      <!-- 名字选项（3选1） -->
+      <view class="name-options">
+        <block wx:for="{{nameOptions}}" wx:key="name">
+          <button
+            class="name-option-btn {{selectedName === item ? 'selected' : ''}} {{showResult && !isCorrect && selectedName === item ? 'wrong' : ''}} {{showResult && showCorrectAnswer && currentInsect.name === item ? 'correct' : ''}}"
+            bindtap="selectNameOption"
+            data-answer="{{item}}"
+            disabled="{{showResult || usedHint}}"
+          >
+            {{item}}
+          </button>
+        </block>
+      </view>
+
+      <!-- 提交按钮 -->
+      <view class="input-section">
+        <button class="submit-btn" bindtap="submitNameAnswer" disabled="{{showResult || usedHint}}">提交</button>
+      </view>
+
       <!-- 显示答案（提示后） -->
       <view wx:if="{{showInsectName}}" class="answer-display">
         <text class="answer-text">正确答案：{{currentInsect.name}}</text>
-      </view>
-      
-      <!-- 输入框 -->
-      <view class="input-section">
-        <input 
-          class="name-input" 
-          placeholder="请输入昆虫名字" 
-          value="{{currentInsectName}}"
-          bindinput="onNameInput"
-          disabled="{{showResult}}"
-        />
-        <button class="submit-btn" bindtap="submitNameAnswer" disabled="{{showResult}}">提交</button>
       </view>
       
       <!-- 结果显示 -->

@@ -27,18 +27,28 @@
     <view class="stats-title">游戏统计</view>
     <view class="stats-grid">
       <view class="stat-item">
-        <text class="stat-number">{{stats.totalGames}}</text>
-        <text class="stat-label">总游戏次数</text>
+        <text class="stat-number">{{stats[gameType].totalGames}}</text>
+        <text class="stat-label">{{gameType === 'judge' ? '判官游戏次数' : '拼图完成次数'}}</text>
       </view>
       <view class="stat-item">
-        <text class="stat-number">{{stats.correctRate}}%</text>
-        <text class="stat-label">正确率</text>
+        <text class="stat-number">{{stats[gameType].correctRate}}%</text>
+        <text class="stat-label">{{gameType === 'judge' ? '判题正确率' : '拼图完成率'}}</text>
       </view>
       <view class="stat-item">
-        <text class="stat-number">{{stats.bestScore}}</text>
-        <text class="stat-label">最高分</text>
+        <text class="stat-number">{{stats[gameType].bestScore}}</text>
+        <text class="stat-label">该游戏最高分</text>
       </view>
     </view>
+     
+     <!-- 统计切换按钮：在这里切换查看两种游戏的统计 -->
+     <view class="game-tabs stats-tabs">
+       <button class="tab-btn {{gameType === 'judge' ? 'active' : ''}}" bindtap="switchGameType" data-type="judge">
+         益害小判官
+       </button>
+       <button class="tab-btn {{gameType === 'puzzle' ? 'active' : ''}}" bindtap="switchGameType" data-type="puzzle">
+         虫虫拼图
+       </button>
+     </view>
   </view>
 
   <!-- 游戏记录 -->
@@ -50,16 +60,6 @@
       </view>
     </view>
     
-    <!-- 游戏类型切换 -->
-    <view class="game-tabs">
-      <button class="tab-btn {{gameType === 'judge' ? 'active' : ''}}" bindtap="switchGameType" data-type="judge">
-        益害判官
-      </button>
-      <button class="tab-btn {{gameType === 'puzzle' ? 'active' : ''}}" bindtap="switchGameType" data-type="puzzle">
-        虫虫拼图
-      </button>
-    </view>
-
     <!-- 记录列表 -->
     <view wx:if="{{loading}}" class="loading">
       <text>加载中...</text>

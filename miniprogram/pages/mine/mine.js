@@ -9,6 +9,7 @@ Page({
     browseHistory: [], // 浏览记录
     browseDays: 0, // 浏览天数
     watchHistory: [], // 观看记录
+    favoriteVideos: [], // 收藏视频（当前身份展示）
     profileBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     profileBackgroundType: 'color', // 'color' 或 'image'
     profileCardStyle: 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);', // 计算好的样式字符串
@@ -85,6 +86,7 @@ Page({
     await this.initProfileBackground();
     await this.loadBrowseHistory();
     await this.loadWatchHistory();
+    await this.loadFavoriteVideos();
   },
 
   // 加载用户信息
@@ -619,6 +621,40 @@ Page({
 
   stopPropagation() {},
 
+  // 加载收藏视频（按身份区分）
+  async loadFavoriteVideos() {
+    const app = getApp();
+    const userId = app.globalData.userId || app.globalData.openid || 'default';
+    const userType = this.data.userInfo.user_type || 'parent';
+
+    try {
+      const key = `favorite_videos_${userId}_${userType}`;
+      let list = wx.getStorageSync(key) || [];
+
+      // 按收藏时间倒序
+      list.sort((a, b) => {
+        const timeA = new Date(a.favoriteTime || 0).getTime();
+        const timeB = new Date(b.favoriteTime || 0).getTime();
+        return timeB - timeA;
+      });
+
+      // 儿童只展示最新3条，家长展示最近20条
+      const displayCount = userType === 'child' ? 3 : 20;
+      const displayList = list.slice(0, displayCount);
+
+      this.setData({
+        favoriteVideos: displayList,
+        allFavoriteVideos: list
+      });
+    } catch (error) {
+      console.error('加载收藏视频失败:', error);
+      this.setData({
+        favoriteVideos: [],
+        allFavoriteVideos: []
+      });
+    }
+  },
+
   // 加载浏览记录
   async loadBrowseHistory() {
     const app = getApp();
@@ -754,6 +790,13 @@ Page({
   goToWatchHistoryManage() {
     wx.navigateTo({
       url: '/pages/history-manage/history-manage?type=watch'
+    });
+  },
+
+  // 跳转到收藏视频管理页面
+  goToFavoriteHistoryManage() {
+    wx.navigateTo({
+      url: '/pages/history-manage/history-manage?type=favorite'
     });
   },
 

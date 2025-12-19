@@ -1,7 +1,9 @@
 <view class="container">
   <!-- 顶部操作栏 -->
   <view class="header">
-    <view class="header-title">{{historyType === 'watch' ? '观看记录管理' : '浏览记录管理'}}</view>
+    <view class="header-title">
+      {{historyType === 'watch' ? '观看记录管理' : (historyType === 'favorite' ? '收藏视频管理' : '浏览记录管理')}}
+    </view>
     <view class="header-actions">
       <view class="action-btn" bindtap="toggleDeleteMode">
         <text>{{deleteMode ? '取消' : '删除'}}</text>
@@ -94,9 +96,48 @@
     </view>
   </view>
 
+  <!-- 收藏视频列表 -->
+  <view class="history-list" wx:if="{{historyType === 'favorite' && favoriteHistory.length > 0}}">
+    <view 
+      wx:for="{{favoriteHistory}}" 
+      wx:key="index" 
+      wx:for-item="favItem"
+      wx:for-index="favIndex"
+      class="history-item {{deleteMode && selectedMap[favIndex] ? 'selected' : ''}}"
+      bindtap="goToDetail"
+      data-index="{{favIndex}}"
+      data-item="{{favItem}}"
+    >
+      <!-- 删除模式：显示选择框 -->
+      <view class="select-checkbox" wx:if="{{deleteMode}}">
+        <view class="checkbox {{selectedMap[favIndex] ? 'checked' : ''}}">
+          <text wx:if="{{selectedMap[favIndex]}}">✓</text>
+        </view>
+      </view>
+      
+      <!-- 视频缩略图 -->
+      <image class="history-image" src="{{favItem.thumbnail}}" mode="aspectFill" />
+      
+      <!-- 视频信息 -->
+      <view class="history-info">
+        <text class="history-name">{{favItem.title}}</text>
+        <text class="history-time">{{formatBrowseTime(favItem.favoriteTime)}}</text>
+      </view>
+      
+      <!-- 删除模式：高亮显示 -->
+      <view class="delete-overlay" wx:if="{{deleteMode && selectedMap[favIndex]}}">
+        <text>已选中</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 空状态 -->
-  <view class="empty-state" wx:if="{{(historyType === 'browse' && browseHistory.length === 0) || (historyType === 'watch' && watchHistory.length === 0)}}">
-    <text class="empty-icon">{{historyType === 'watch' ? '🎬' : '🔍'}}</text>
-    <text class="empty-text">还没有{{historyType === 'watch' ? '观看' : '浏览'}}记录</text>
+  <view class="empty-state" wx:if="{{(historyType === 'browse' && browseHistory.length === 0) || (historyType === 'watch' && watchHistory.length === 0) || (historyType === 'favorite' && favoriteHistory.length === 0)}}">
+    <text class="empty-icon">
+      {{historyType === 'watch' ? '🎬' : (historyType === 'favorite' ? '⭐' : '🔍')}}
+    </text>
+    <text class="empty-text">
+      还没有{{historyType === 'watch' ? '观看' : (historyType === 'favorite' ? '收藏' : '浏览')}}记录
+    </text>
   </view>
 </view>

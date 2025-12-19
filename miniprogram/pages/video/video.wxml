@@ -54,6 +54,14 @@
       <view class="video-description">{{videoInfo.description}}</view>
     </view>
 
+    <!-- 收藏按钮 -->
+    <view class="like-section">
+      <button class="like-btn {{liked ? 'liked' : ''}}" bindtap="onToggleLike">
+        <text class="like-icon">{{ liked ? '★' : '☆' }}</text>
+        <text class="like-text">{{ liked ? '已收藏' : '收藏视频' }}</text>
+      </button>
+    </view>
+
     <!-- 控制按钮 - 移除自定义全屏按钮，使用视频组件自带的全屏按钮 -->
     <!-- <view class="video-controls">
       <button class="control-btn single" bindtap="toggleFullscreen" disabled="{{fsBusy}}">

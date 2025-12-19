@@ -16,12 +16,15 @@ Page({
     completionTime: 0,
     formattedTime: '',
     score: 0,
-    loading: true,
+    loading: true, // 拼图数据加载中
+    initializing: true, // 页面首次初始化加载中（只用于顶部“加载中”遮罩）
     showHint: false,
     gridSize: 2, // 默认简单难度为2*2
     startBackground: '', // 开始界面背景图片URL
     bgmEnabled: true, // BGM开关
-    bgmContext: null // 背景音乐上下文
+    bgmContext: null, // 背景音乐上下文
+    pressedDifficulty: '', // 当前按压态的难度按钮
+    lastPuzzleConfigId: null // 上一局使用的拼图配置ID，避免“再来一局”重复
   },
 
   async onLoad(options) {
@@ -30,8 +33,8 @@ Page({
     await this.loadStartBackground();
     // 初始化BGM
     this.initBGM();
-    // 不再自动加载，等待用户选择难度
-    this.setData({ loading: false });
+    // 首次初始化完成，关闭全屏加载，只保留难度选择界面
+    this.setData({ loading: false, initializing: false });
   },
 
   // 加载开始界面背景图片
@@ -160,13 +163,23 @@ Page({
       const result = await app.getPuzzleConfigs(this.data.insectId, this.data.difficulty);
       
       if (result.success && result.data.length > 0) {
+        // 为“再来一局”避免重复上一局的拼图配置
+        let availableConfigs = result.data;
+        if (this.data.lastPuzzleConfigId !== null && availableConfigs.length > 1) {
+          const filtered = availableConfigs.filter(c => c.id !== this.data.lastPuzzleConfigId);
+          if (filtered.length > 0) {
+            availableConfigs = filtered;
+          }
+        }
+
         // 随机选择一个拼图配置
-        const randomIndex = Math.floor(Math.random() * result.data.length);
-        const selectedConfig = result.data[randomIndex];
+        const randomIndex = Math.floor(Math.random() * availableConfigs.length);
+        const selectedConfig = availableConfigs[randomIndex];
         
         this.setData({
           puzzleConfig: selectedConfig,
-          loading: false
+          loading: false,
+          lastPuzzleConfigId: selectedConfig.id
         });
         
         // 生成拼图并自动开始游戏
@@ -341,6 +354,14 @@ Page({
   // 选择难度
   selectDifficulty(e) {
     const difficulty = e.currentTarget.dataset.difficulty;
+    // 设置按压效果，让按钮内文字瞬间变大再恢复
+    this.setData({
+      pressedDifficulty: difficulty
+    });
+    setTimeout(() => {
+      this.setData({ pressedDifficulty: '' });
+    }, 150);
+
     this.setData({ 
       difficulty,
       puzzleConfig: null,

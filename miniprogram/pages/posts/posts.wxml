@@ -39,7 +39,7 @@
             mode="aspectFill" 
             binderror="onImageError" 
             data-type="post"
-            bindtap="previewImage"
+            catchtap="previewImage"
             data-url="{{item.imageUrl}}"
           ></image>
         </view>

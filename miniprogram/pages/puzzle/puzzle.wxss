@@ -37,7 +37,8 @@
 .start-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.5) 100%);
+  /* 取消原来的强遮罩和“模糊感”，只保留极轻微遮罩避免文字太亮 */
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.12) 100%);
 }
 
 .start-content {
@@ -46,19 +47,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32rpx;
+  gap: 36rpx;
 }
 
 .title {
-  font-size: 56rpx;
+  font-size: 100rpx;
   font-weight: bold;
-  margin-bottom: 12rpx;
+  margin-bottom: 8rpx;
+  margin-top: -300rpx;
   text-shadow: 0 3rpx 12rpx rgba(0, 0, 0, 0.3);
 }
 
 .subtitle {
-  font-size: 28rpx;
-  margin-bottom: 24rpx;
+  font-size: 44rpx;
+  margin-bottom: 32rpx;
   opacity: 0.9;
   text-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.25);
 }
@@ -73,7 +75,7 @@
 
 .label {
   display: block;
-  font-size: 24rpx;
+  font-size: 40rpx;
   margin-bottom: 20rpx;
 }
 
@@ -89,12 +91,19 @@
   border: 2rpx solid transparent;
   border-radius: 25rpx;
   padding: 18rpx 30rpx;
-  font-size: 26rpx;
+  font-size: 50rpx;
+  font-weight: bold;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .difficulty-btn.active {
   background: #4CAF50;
   border-color: #4CAF50;
+}
+
+.difficulty-btn.pressed {
+  transform: scale(1.06);
+  box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.3);
 }
 
 .start-btn {
@@ -286,10 +295,38 @@
   height: 100vh;
   color: #000;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.end-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.end-overlay {
+  position: absolute;
+  inset: 0;
+  /* 适当减弱底部纯白，保留一点背景颜色 */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.85) 70%, rgba(255, 255, 255, 0.9) 100%);
+  z-index: 0;
+}
+
+.end-content-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 40rpx;
 }
 
 .end-screen .title {
-  font-size: 64rpx;
+  font-size: 72rpx;
   color: #000;
   margin-bottom: 40rpx;
 }
@@ -297,14 +334,25 @@
 .final-score {
   font-size: 40rpx;
   color: #000;
-  margin-bottom: 20rpx;
+  margin-bottom: 10rpx;
   font-weight: bold;
+}
+
+.stats-box {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 30rpx;
+  padding: 40rpx 60rpx;
+  box-shadow: 0 10rpx 32rpx rgba(0, 0, 0, 0.25);
+  margin-bottom: 16rpx;
+  min-width: 520rpx;
 }
 
 .buttons {
   display: flex;
   gap: 20rpx;
-  margin-top: 40rpx;
+  margin-top: 32rpx;
+  justify-content: center;
+  width: 100%;
 }
 
 .btn {
@@ -321,6 +369,15 @@
   background: transparent;
   border: 3rpx solid #000;
   color: #000;
+}
+
+.encourage-text {
+  margin-top: 18rpx;
+  font-size: 40rpx;
+  color: #333;
+  text-align: center;
+  line-height: 1.6;
+  max-width: 600rpx;
 }
 
 

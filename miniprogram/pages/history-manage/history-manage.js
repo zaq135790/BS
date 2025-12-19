@@ -1,8 +1,9 @@
 Page({
   data: {
-    historyType: 'browse', // 'browse' 或 'watch'
+    historyType: 'browse', // 'browse' | 'watch' | 'favorite'
     browseHistory: [],
     watchHistory: [],
+    favoriteHistory: [],
     deleteMode: false, // 是否处于删除模式
     selectedItems: [], // 选中的要删除的项目
     selectedIndexes: [], // 选中的索引列表，用于wxml判断
@@ -15,12 +16,18 @@ Page({
     this.setData({ historyType: type });
     
     // 设置页面标题
-    wx.setNavigationBarTitle({
-      title: type === 'watch' ? '观看记录管理' : '浏览记录管理'
-    });
+    const title =
+      type === 'watch'
+        ? '观看记录管理'
+        : type === 'favorite'
+          ? '收藏视频管理'
+          : '浏览记录管理';
+    wx.setNavigationBarTitle({ title });
     
     if (type === 'watch') {
       this.loadWatchHistory();
+    } else if (type === 'favorite') {
+      this.loadFavoriteHistory();
     } else {
       this.loadBrowseHistory();
     }
@@ -30,6 +37,8 @@ Page({
     // 每次显示页面时重新加载记录
     if (this.data.historyType === 'watch') {
       this.loadWatchHistory();
+    } else if (this.data.historyType === 'favorite') {
+      this.loadFavoriteHistory();
     } else {
       this.loadBrowseHistory();
     }
@@ -92,7 +101,12 @@ Page({
 
   // 全选/取消全选
   toggleSelectAll() {
-    const historyList = this.data.historyType === 'watch' ? this.data.watchHistory : this.data.browseHistory;
+    const historyList =
+      this.data.historyType === 'watch'
+        ? this.data.watchHistory
+        : this.data.historyType === 'favorite'
+          ? this.data.favoriteHistory
+          : this.data.browseHistory;
     const isAllSelected = this.data.isAllSelected;
     
     if (isAllSelected) {
@@ -123,16 +137,24 @@ Page({
   // 选择/取消选择要删除的项目
   toggleSelectItem(e) {
     const index = parseInt(e.currentTarget.dataset.index); // 确保是数字类型
-    const historyList = this.data.historyType === 'watch' ? this.data.watchHistory : this.data.browseHistory;
+    const historyList =
+      this.data.historyType === 'watch'
+        ? this.data.watchHistory
+        : this.data.historyType === 'favorite'
+          ? this.data.favoriteHistory
+          : this.data.browseHistory;
     const item = historyList[index];
     const selectedItems = [...this.data.selectedItems];
     let selectedIndexes = [...this.data.selectedIndexes].map(idx => parseInt(idx)); // 确保都是数字类型
     const selectedMap = {...this.data.selectedMap}; // 复制选中映射对象
     
     // 根据类型判断唯一标识
-    const uniqueKey = this.data.historyType === 'watch' 
-      ? (selected => selected.videoId === item.videoId && selected.watchTime === item.watchTime)
-      : (selected => selected.insectId === item.insectId && selected.browseTime === item.browseTime);
+    const uniqueKey =
+      this.data.historyType === 'watch'
+        ? (selected => selected.videoId === item.videoId && selected.watchTime === item.watchTime)
+        : this.data.historyType === 'favorite'
+          ? (selected => selected.videoId === item.videoId && selected.favoriteTime === item.favoriteTime)
+          : (selected => selected.insectId === item.insectId && selected.browseTime === item.browseTime);
     
     const itemIndex = selectedItems.findIndex(uniqueKey);
     
@@ -174,7 +196,12 @@ Page({
       return;
     }
 
-    const recordType = this.data.historyType === 'watch' ? '观看记录' : '浏览记录';
+    const recordType =
+      this.data.historyType === 'watch'
+        ? '观看记录'
+        : this.data.historyType === 'favorite'
+          ? '收藏视频'
+          : '浏览记录';
     wx.showModal({
       title: '确认删除',
       content: `确定要删除选中的 ${this.data.selectedItems.length} 条${recordType}吗？`,
@@ -204,9 +231,14 @@ Page({
     }
     
     try {
-      const historyKey = this.data.historyType === 'watch' 
-        ? `watch_history_${userId}_${userType}`
-        : `browse_history_${userId}_${userType}`;
+      let historyKey = '';
+      if (this.data.historyType === 'watch') {
+        historyKey = `watch_history_${userId}_${userType}`;
+      } else if (this.data.historyType === 'favorite') {
+        historyKey = `favorite_videos_${userId}_${userType}`;
+      } else {
+        historyKey = `browse_history_${userId}_${userType}`;
+      }
       let history = wx.getStorageSync(historyKey) || [];
       
       // 删除选中的记录
@@ -215,6 +247,12 @@ Page({
         history = history.filter(item => {
           return !selectedItems.some(selected => 
             selected.videoId === item.videoId && selected.watchTime === item.watchTime
+          );
+        });
+      } else if (this.data.historyType === 'favorite') {
+        history = history.filter(item => {
+          return !selectedItems.some(selected => 
+            selected.videoId === item.videoId && selected.favoriteTime === item.favoriteTime
           );
         });
       } else {
@@ -231,6 +269,8 @@ Page({
       // 重新加载记录
       if (this.data.historyType === 'watch') {
         this.loadWatchHistory();
+      } else if (this.data.historyType === 'favorite') {
+        this.loadFavoriteHistory();
       } else {
         this.loadBrowseHistory();
       }
@@ -280,7 +320,7 @@ Page({
     }
     
     const item = e.currentTarget.dataset.item;
-    if (this.data.historyType === 'watch') {
+    if (this.data.historyType === 'watch' || this.data.historyType === 'favorite') {
       // 跳转到视频详情
       wx.navigateTo({
         url: `/pages/video/video?id=${item.videoId}`
@@ -333,6 +373,50 @@ Page({
       console.error('加载观看记录失败:', error);
       this.setData({
         watchHistory: []
+      });
+    }
+  },
+
+  // 加载收藏视频
+  loadFavoriteHistory() {
+    const app = getApp();
+    const userId = app.globalData.userId || app.globalData.openid || 'default';
+
+    // 获取当前用户身份（默认儿童）
+    let userType = 'child';
+    try {
+      const userInfoKey = `user_info_${userId}`;
+      const storedUserInfo = wx.getStorageSync(userInfoKey);
+      if (storedUserInfo && storedUserInfo.user_type) {
+        userType = storedUserInfo.user_type;
+      }
+    } catch (error) {
+      console.error('获取用户身份失败:', error);
+    }
+
+    try {
+      const historyKey = `favorite_videos_${userId}_${userType}`;
+      let history = wx.getStorageSync(historyKey) || [];
+
+      // 按收藏时间倒序排列
+      history.sort((a, b) => {
+        const timeA = new Date(a.favoriteTime || 0).getTime();
+        const timeB = new Date(b.favoriteTime || 0).getTime();
+        return timeB - timeA;
+      });
+
+      this.setData({
+        favoriteHistory: history,
+        deleteMode: false,
+        selectedItems: [],
+        selectedIndexes: [],
+        selectedMap: {},
+        isAllSelected: false
+      });
+    } catch (error) {
+      console.error('加载收藏视频失败:', error);
+      this.setData({
+        favoriteHistory: []
       });
     }
   }

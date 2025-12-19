@@ -509,7 +509,6 @@ Page({
 
   // 预览图片（点击放大）
   previewImage(e) {
-    e.stopPropagation(); // 阻止事件冒泡，避免跳转到详情页
     const current = e.currentTarget.dataset.url;
     const posts = this.data.posts;
     

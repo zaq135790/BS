@@ -12,7 +12,8 @@ Page({
     // 双击节流
     lastTapTime: 0,
     showPauseIcon: false,
-    relatedVideos: []
+    relatedVideos: [],
+    liked: false
   },
 
   onReady() {
@@ -31,6 +32,7 @@ Page({
     const videoId = options.id;
     this.setData({ videoId });
     await this.loadVideoInfo();
+    this.loadLikeStatus();
   },
 
   // 加载视频信息
@@ -447,6 +449,98 @@ Page({
     } catch (error) {
       console.error('保存观看记录失败:', error);
     }
+  },
+
+  // 点赞状态加载
+  loadLikeStatus() {
+    try {
+      const app = getApp();
+      const userId = app.globalData.userId || app.globalData.openid || 'default';
+
+      // 获取当前用户身份（默认儿童）
+      let userType = 'child';
+      try {
+        const userInfoKey = `user_info_${userId}`;
+        const storedUserInfo = wx.getStorageSync(userInfoKey);
+        if (storedUserInfo && storedUserInfo.user_type) {
+          userType = storedUserInfo.user_type;
+        }
+      } catch (error) {
+        console.error('获取用户身份失败（收藏状态）:', error);
+      }
+
+      const key = `favorite_videos_${userId}_${userType}`;
+      const list = wx.getStorageSync(key) || [];
+      const videoId = this.data.videoId;
+      const exists = list.some(item => String(item.videoId) === String(videoId));
+      this.setData({ liked: exists });
+    } catch (error) {
+      console.error('加载收藏状态失败:', error);
+    }
+  },
+
+  // 收藏/取消收藏当前视频（按身份分开存储）
+  onToggleLike() {
+    const app = getApp();
+    const userId = app.globalData.userId || app.globalData.openid || 'default';
+
+    // 获取当前用户身份（默认儿童）
+    let userType = 'child';
+    try {
+      const userInfoKey = `user_info_${userId}`;
+      const storedUserInfo = wx.getStorageSync(userInfoKey);
+      if (storedUserInfo && storedUserInfo.user_type) {
+        userType = storedUserInfo.user_type;
+      }
+    } catch (error) {
+      console.error('获取用户身份失败（收藏切换）:', error);
+    }
+
+    const key = `favorite_videos_${userId}_${userType}`;
+    const videoId = this.data.videoId;
+    if (!videoId) return;
+
+    let favorites = [];
+    try {
+      favorites = wx.getStorageSync(key) || [];
+    } catch (error) {
+      console.error('读取收藏列表失败:', error);
+    }
+
+    const nextLiked = !this.data.liked;
+    const videoInfo = this.data.videoInfo || {};
+
+    if (nextLiked) {
+      const record = {
+        videoId: videoInfo.id || videoId,
+        title: videoInfo.title || videoInfo.insect_name || '未知视频',
+        insectName: videoInfo.insect_name || '',
+        thumbnail: videoInfo.thumbnail_url || '',
+        category: videoInfo.category || '其他',
+        favoriteTime: new Date().toISOString()
+      };
+
+      // 如果已存在，则更新时间；否则添加
+      const existingIndex = favorites.findIndex(item => String(item.videoId) === String(record.videoId));
+      if (existingIndex >= 0) {
+        favorites[existingIndex] = record;
+      } else {
+        favorites.unshift(record);
+      }
+
+      // 只保留最近50条
+      favorites = favorites.slice(0, 50);
+    } else {
+      favorites = favorites.filter(item => String(item.videoId) !== String(videoId));
+    }
+
+    try {
+      wx.setStorageSync(key, favorites);
+    } catch (error) {
+      console.error('保存收藏列表失败:', error);
+    }
+
+    this.setData({ liked: nextLiked });
   },
 
   onUnload() {

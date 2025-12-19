@@ -38,18 +38,19 @@
       <image src="/images/tabbar/video_selected.png" class="feature-icon" />
       <text>虫虫剧场</text>
     </view>
-    <view class="feature-item" bindtap="goToPosts">
-      <image src="/images/tabbar/speak.png" class="feature-icon" />
-      <text>畅所欲言</text>
+    <!-- 儿童和家长都可使用的虫虫识别 -->
+    <view class="feature-item" bindtap="goToInsectRecognition">
+      <image src="/images/tabbar/shibie.png" class="feature-icon" />
+      <text>虫虫识别</text>
     </view>
-    <!-- 科普知识库和昆虫识别（所有身份都显示） -->
+    <!-- 科普知识库和畅所欲言 -->
     <view class="feature-item" bindtap="goToKnowledgeBase">
       <image src="/images/tabbar/zlk.png" class="feature-icon" />
       <text>科普知识库</text>
     </view>
-    <view class="feature-item" bindtap="goToInsectRecognition">
-      <image src="/images/tabbar/shibie.png" class="feature-icon" />
-      <text>昆虫识别</text>
+    <view class="feature-item" bindtap="goToPosts">
+      <image src="/images/tabbar/speak.png" class="feature-icon" />
+      <text>畅所欲言</text>
     </view>
   </view>
 

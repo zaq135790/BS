@@ -2,7 +2,7 @@
 .container {
   position: relative;
   min-height: 100vh;
-  background: #000;
+  background: #f7f8fa;
 }
 
 .loading {
@@ -15,7 +15,7 @@
 }
 
 .video-container {
-  background: #000;
+  background: #f7f8fa;
 }
 
 .video-wrapper {
@@ -221,6 +221,46 @@
   color: white;
   font-size: 40rpx;
   font-weight: bold;
+}
+
+.like-section {
+  padding: 30rpx 30rpx;
+  background: #f7f8fa;
+}
+
+.like-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  background: white;
+  border-radius: 999rpx;
+  border: 2rpx solid #e6e6e6;
+  padding: 20rpx 0;
+  font-size: 28rpx;
+  color: #333;
+  box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.like-btn::after {
+  border: none;
+}
+
+.like-btn.liked {
+  background: linear-gradient(135deg, #7ed56f, #55c57a);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 12rpx 24rpx rgba(85, 197, 122, 0.3);
+}
+
+.like-icon {
+  font-size: 42rpx;
+}
+
+.like-text {
+  font-weight: bold;
+  font-size: 38rpx;
 }
 
 
